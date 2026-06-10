@@ -62,6 +62,7 @@ BENCHMARK_REGISTRY: dict[str, BenchmarkSpec] = {
     ),
     "gsm8k": BenchmarkSpec(
         hf_path="openai/gsm8k",
+        hf_name="main",
         hf_split="test",
         question_key="question",
         answer_key="answer",
