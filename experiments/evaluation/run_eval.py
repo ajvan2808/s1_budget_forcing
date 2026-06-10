@@ -16,11 +16,14 @@ import json
 import os
 import re
 import time
+from dataclasses import dataclass
+from datetime import datetime
 from fractions import Fraction
 from pathlib import Path
 from tqdm import tqdm
 
 from datasets import load_dataset
+import torch
 
 # Local imports
 import sys
@@ -31,28 +34,48 @@ from budget_forcing import BudgetForcingDecoder, compute_all_metrics
 
 # ── Benchmark configs ─────────────────────────────────────────────────────────
 
-BENCHMARK_CONFIGS = {
-    "math500": {
-        "hf_path": "HuggingFaceH4/MATH-500",
-        "hf_split": "test",
-        "question_key": "problem",
-        "answer_key": "answer",
-        "n_total": 500,
-    },
-    "aime24": {
-        "hf_path": "Maxwell-Jia/AIME_1983_2024",
-        "hf_split": "test",
-        "question_key": "Problem",
-        "answer_key": "Answer",
-        "n_total": 30,  # AIME 2024 = 30 problems
-    },
-    "gsm8k": {
-        "hf_path": "openai/gsm8k",
-        "hf_split": "test",
-        "question_key": "question",
-        "answer_key": "answer",
-        "n_total": 1319,
-    },
+@dataclass(frozen=True)
+class BenchmarkSpec:
+    hf_path: str
+    hf_split: str
+    question_key: str
+    answer_key: str
+    n_total: int
+    hf_name: str | None = None
+    choices_key: str | None = None
+
+
+BENCHMARK_REGISTRY: dict[str, BenchmarkSpec] = {
+    "math500": BenchmarkSpec(
+        hf_path="HuggingFaceH4/MATH-500",
+        hf_split="test",
+        question_key="problem",
+        answer_key="answer",
+        n_total=500,
+    ),
+    "aime24": BenchmarkSpec(
+        hf_path="Maxwell-Jia/AIME_1983_2024",
+        hf_split="test",
+        question_key="Problem",
+        answer_key="Answer",
+        n_total=30,  # AIME 2024 = 30 problems
+    ),
+    "gsm8k": BenchmarkSpec(
+        hf_path="openai/gsm8k",
+        hf_split="test",
+        question_key="question",
+        answer_key="answer",
+        n_total=1319,
+    ),
+    "arc_challenge": BenchmarkSpec(
+        hf_path="allenai/ai2_arc",
+        hf_name="ARC-Challenge",
+        hf_split="test",
+        question_key="question",
+        answer_key="answerKey",
+        choices_key="choices",
+        n_total=2590,
+    ),
 }
 
 
@@ -72,6 +95,25 @@ Think carefully before giving your final answer.
 
 def format_prompt(question: str) -> str:
     return THINKING_PROMPT_TEMPLATE.format(question=question)
+
+
+def format_question(sample: dict, cfg: BenchmarkSpec) -> str:
+    """Format câu hỏi, có hỗ trợ multiple-choice benchmark như ARC-Challenge."""
+    question = str(sample[cfg.question_key])
+    if not cfg.choices_key:
+        return question
+
+    choices = sample.get(cfg.choices_key)
+    if not isinstance(choices, dict):
+        return question
+
+    labels = choices.get("label", [])
+    texts = choices.get("text", [])
+    if not labels or not texts:
+        return question
+
+    option_lines = [f"{lab}. {txt}" for lab, txt in zip(labels, texts)]
+    return f"{question}\n\nOptions:\n" + "\n".join(option_lines)
 
 
 # ── Answer extraction ─────────────────────────────────────────────────────────
@@ -116,6 +158,22 @@ def _numeric_candidates(text: str) -> list[float]:
     return candidates
 
 
+def _extract_choice_letter(text: str) -> str | None:
+    """Extract chọn đáp án dạng A/B/C/D từ text dự đoán."""
+    patterns = [
+        r"(?:final answer|answer is|therefore|so)\s*[:\-]?\s*\(?([A-E])\)?",
+        r"\boption\s*([A-E])\b",
+        r"\(([A-E])\)",
+        r"\b([A-E])\b",
+    ]
+    upper = text.upper()
+    for pat in patterns:
+        match = re.search(pat, upper, re.I)
+        if match:
+            return match.group(1).upper()
+    return None
+
+
 def check_answer(predicted: str, ground_truth: str) -> bool:
     """
     So sánh đáp án. Normalize để tránh false negative.
@@ -131,6 +189,12 @@ def check_answer(predicted: str, ground_truth: str) -> bool:
     g_norm = normalize(str(ground_truth))
     if p_norm == g_norm:
         return True
+
+    # Multiple-choice tolerant comparison (e.g., ARC-Challenge answerKey = A/B/C/D)
+    if len(g_norm) == 1 and g_norm in {"a", "b", "c", "d", "e"}:
+        pred_choice = _extract_choice_letter(predicted)
+        if pred_choice and pred_choice.lower() == g_norm:
+            return True
 
     p_nums = _numeric_candidates(predicted)
     g_nums = _numeric_candidates(str(ground_truth))
@@ -164,8 +228,11 @@ def run_evaluation(
     decoder = BudgetForcingDecoder(model, tokenizer)
 
     # Load benchmark
-    cfg = BENCHMARK_CONFIGS[benchmark]
-    dataset = load_dataset(cfg["hf_path"], split=cfg.get("hf_split", "test"))
+    cfg = BENCHMARK_REGISTRY[benchmark]
+    if cfg.hf_name:
+        dataset = load_dataset(cfg.hf_path, cfg.hf_name, split=cfg.hf_split)
+    else:
+        dataset = load_dataset(cfg.hf_path, split=cfg.hf_split)
 
     # Sample n_samples câu hỏi
     import random
@@ -181,6 +248,25 @@ def run_evaluation(
         "benchmark": benchmark,
         "trigger": trigger,
         "n_samples": n_samples,
+        "run_metadata": {
+            "timestamp_utc": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            "seed": seed,
+            "max_new_tokens": max_new_tokens,
+            "load_in_4bit": load_in_4bit,
+            "runtime": {
+                "cuda_available": torch.cuda.is_available(),
+                "mps_available": torch.backends.mps.is_available(),
+            },
+            "benchmark_spec": {
+                "hf_path": cfg.hf_path,
+                "hf_name": cfg.hf_name,
+                "hf_split": cfg.hf_split,
+                "question_key": cfg.question_key,
+                "answer_key": cfg.answer_key,
+                "choices_key": cfg.choices_key,
+                "n_total": cfg.n_total,
+            },
+        },
         "experiments": {}
     }
 
@@ -193,8 +279,8 @@ def run_evaluation(
         run_results = []
 
         for i, sample in enumerate(tqdm(samples, desc=f"n_wait={n_wait}")):
-            question = sample[cfg["question_key"]]
-            ground_truth = str(sample[cfg["answer_key"]])
+            question = format_question(sample, cfg)
+            ground_truth = str(sample[cfg.answer_key])
 
             prompt = format_prompt(question)
             input_ids = tokenizer.encode(prompt, return_tensors="pt")
@@ -277,7 +363,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Budget Forcing Evaluation")
     parser.add_argument("--model", default="qwen2.5-7B", choices=list(SUPPORTED_MODELS.keys()))
     parser.add_argument("--benchmark", default="math500",
-                        choices=list(BENCHMARK_CONFIGS.keys()))
+                        choices=list(BENCHMARK_REGISTRY.keys()))
     parser.add_argument("--n_wait", nargs="+", type=int, default=[0, 1, 2, 4],
                         help="List of n_wait values to test")
     parser.add_argument("--trigger", default="Wait",
