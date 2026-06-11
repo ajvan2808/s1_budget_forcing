@@ -1,68 +1,71 @@
-# Budget Forcing - Evaluating the Generalizability across Open-Source Language Model Families.
+# Budget Forcing + RAG on Vietnamese Reasoning
 
-This project studies **Budget Forcing** from *s1: Simple Test-Time Scaling* with the current research focus on **Gap 1: whether Budget Forcing generalizes beyond the Qwen model family used in the paper**.
+This project evaluates **Budget Forcing (BF)** on Vietnamese-language reasoning tasks and compares it head-to-head with **Retrieval-Augmented Generation (RAG)**. It is the first published comparison of test-time-scaling-via-decoding against retrieve-more-context on Vietnamese benchmarks.
 
-The repository is no longer just a reproduction scaffold. It now has Phase 2 support for cross-model and cross-benchmark smoke/small-batch runs, but the final experiment artifacts still need to be generated on a machine with stable model-download bandwidth and suitable accelerator support.
+Based on *s1: Simple Test-Time Scaling* (EMNLP 2025). Repository: `s1_budget_forcing`.
 
-## Research Scope
+## Research Question
 
-**Primary question:** Does Budget Forcing preserve positive test-time scaling when applied to open-source model families beyond Qwen?
+> Does Budget Forcing work for Vietnamese-language reasoning? Where does thinking longer (BF) beat knowing more (RAG), and can combining them (BF+RAG) produce further gains?
 
-**Current target families:**
+## Experimental Conditions
 
-| Family | Model key in repo | Role |
-| --- | --- | --- |
-| Qwen | `qwen2.5-3B`, `qwen2.5-7B`, `r1-distill-7B`, `r1-distill-14B` | Paper-family reference and reasoning-model baseline |
-| Gemma | `gemma2-2B`, `gemma2-9B` | Non-Qwen family comparison |
-| Phi | `phi3.5-mini`, `phi4-14B` | Non-Qwen family comparison |
-| Llama | `llama3.1-8B` | Optional gated-model comparison |
+| Condition | Description |
+|-----------|-------------|
+| `BF_only` | Budget Forcing decoding (`n_wait` ∈ {0,1,2}), no retrieval |
+| `RAG_only` | Top-3 Vietnamese Wikipedia passages prepended, greedy decoding |
+| `BF+RAG`  | Retrieved context + Budget Forcing (`n_wait` ∈ {1,2}) |
 
-**Current benchmarks:** `math500`, `aime24`, `gsm8k`, `arc_challenge`.
+**Benchmarks:** `vi_gsm8k` (MGSM-vi, 250 problems) · `vimmlu` (ViMMLU, multi-domain)
+
+**Models:** `qwen2.5-3B` / `qwen2.5-7B` (multilingual baseline) · `vinallama-7b` · `vistral-7b` · `seallm-7b`
 
 ## Project Structure
 
 ```text
-.
-├── README.md
-├── PROJECT_BRIEF.md
-├── s1. Simple Test-Time Scaling Analysis.md
+s1_budget_forcing/
+├── PROJECT_BRIEF.md                   ← scope, RQs, risk register
 ├── docs/
-│   ├── brainstorm.md
-│   ├── phase-2-4-taskboard.md
-│   ├── sprint-1/
-│   ├── sprint-2/
-│   ├── sprint-3/
-│   └── sprint-4/
+│   ├── brainstorm.md                  ← pivot history + benchmark/model rationale
+│   ├── phase-2-4-taskboard.md         ← sprint checklist (Agent A + B)
+│   ├── sprint-1/                      ← archived: repo scaffold
+│   ├── sprint-2/                      ← archived: Gap 1 cross-family (superseded)
+│   └── sprint-3/                      ← active: Vietnamese pipeline
+│       ├── plan.md
+│       ├── agent-a-handoff.md         ← coder mission
+│       └── agent-b-handoff.md         ← writer mission
 ├── experiments/
 │   ├── budget_forcing/
-│   │   ├── decoding.py
-│   │   └── metrics.py
-│   ├── data/download_s1k.py
-│   ├── evaluation/run_eval.py
-│   ├── models/model_loader.py
-│   ├── notebooks/
-│   ├── results/
-│   │   └── summary_phase2.py
-│   └── scripts/
-│       ├── run_baseline.sh
-│       ├── run_budget_forcing.sh
-│       └── run_phase2_generalizability.sh
+│   │   ├── decoding.py                ← BudgetForcingDecoder (language-agnostic)
+│   │   └── metrics.py                 ← control / scaling / performance metrics
+│   ├── rag/
+│   │   ├── retriever.py               ← FAISS + multilingual-MiniLM retriever
+│   │   ├── knowledge_base.py          ← Vietnamese Wikipedia index builder
+│   │   └── rag_pipeline.py            ← retrieval + prompt augmentation
+│   ├── models/
+│   │   └── model_loader.py            ← model registry (multilingual + Vi-specific)
+│   ├── evaluation/
+│   │   ├── run_eval.py                ← base registry (BenchmarkSpec, answer logic)
+│   │   └── run_eval_vi.py             ← 3-condition evaluation driver ← main entry point
+│   ├── data/
+│   │   └── download_vi_benchmarks.py  ← validate HF benchmark access
+│   ├── scripts/
+│   │   └── run_vi_bf_rag.sh           ← sweep orchestration
+│   └── results/
+│       └── summary_vi.py              ← JSON → summary_vi.csv + summary_vi.md
 └── report/
-    ├── main.tex
     ├── outline.md
+    ├── main.tex
     ├── references.bib
     └── sections/
+        ├── 01_introduction.tex
+        ├── 02_method.tex
+        ├── 03_metrics.tex
+        ├── 04_analysis.tex
+        ├── 05_related_work.tex
+        ├── 06_experiments.tex
+        └── 07_conclusion.tex
 ```
-
-## Current Status
-
-Updated: 2026-06-11
-
-- Implemented: Budget Forcing decoder, metric helpers, model registry, benchmark registry, evaluation CLI, Phase 2 orchestration script, Phase 2 summary script.
-- Implemented model families: Qwen, DeepSeek-R1-Distill-Qwen, Gemma, Phi, optional Llama.
-- Implemented benchmarks: MATH500, AIME24, GSM8K, ARC-Challenge.
-- Pending: successful Phase 2 run artifacts under `experiments/results/phase2_*`.
-- Known blocker: current macOS workspace has MPS but no CUDA; a prior smoke run reached Hugging Face model download and was interrupted by slow transfer.
 
 ## Quickstart
 
@@ -72,50 +75,79 @@ Install dependencies:
 uv sync
 ```
 
-Check the evaluation CLI:
+Validate Vietnamese benchmarks are accessible:
 
 ```bash
-uv run python experiments/evaluation/run_eval.py --help
+uv run python experiments/data/download_vi_benchmarks.py
 ```
 
-Run a tiny Gap 1 smoke test:
+Build a small RAG index (smoke-friendly, ~10k articles):
 
 ```bash
-MODELS='qwen2.5-3B' \
-BENCHMARKS='gsm8k' \
-N_WAIT_LIST='0 1' \
-N_SAMPLES=2 \
-EXTRA_ARGS='--max_tokens 256 --no_4bit' \
-bash experiments/scripts/run_phase2_generalizability.sh
+uv run python experiments/rag/knowledge_base.py \
+    --output_dir experiments/data/vi_wiki_index_smoke \
+    --max_docs 10000
 ```
 
-Run the planned small Phase 2 matrix:
+**Smoke test** — 1 model × vi_gsm8k × 3 conditions × 5 samples:
 
 ```bash
-MODELS='qwen2.5-3B gemma2-2B phi3.5-mini' \
-BENCHMARKS='gsm8k arc_challenge' \
-N_WAIT_LIST='0 1 2' \
-N_SAMPLES=10 \
+MODELS='qwen2.5-3B' BENCHMARKS='vi_gsm8k' \
+CONDITIONS='BF_only RAG_only BF_RAG' \
+N_WAIT_LIST='0 1 2' N_SAMPLES=5 \
 EXTRA_ARGS='--max_tokens 512 --no_4bit' \
-bash experiments/scripts/run_phase2_generalizability.sh
+bash experiments/scripts/run_vi_bf_rag.sh
 ```
 
-Summarize a completed run directory:
+**Small matrix** — 2 models × 2 benchmarks × 20 samples:
 
 ```bash
-python experiments/results/summary_phase2.py --results_dir experiments/results/phase2_YYYYMMDD_HHMMSS
+MODELS='qwen2.5-3B vinallama-7b' BENCHMARKS='vi_gsm8k vimmlu' \
+CONDITIONS='BF_only RAG_only BF_RAG' \
+N_WAIT_LIST='0 1 2' N_SAMPLES=20 \
+bash experiments/scripts/run_vi_bf_rag.sh
+```
+
+Aggregate results:
+
+```bash
+uv run python experiments/results/summary_vi.py \
+    --results_dir experiments/results/vi_YYYYMMDD_HHMMSS
 ```
 
 ## Evaluation Metrics
 
-| Metric | Meaning | Current implementation note |
-| --- | --- | --- |
-| Control | Whether actual compute matches target compute | Full token-budget control needs explicit target/actual token logging; current runs log `n_wait` and thinking-token details. |
-| Scaling | Accuracy trend as extra `n_wait` compute is added | Computed from the accuracy sweep. |
-| Performance | Best accuracy observed across compute levels | Computed from the accuracy sweep. |
+| Metric | Definition |
+|--------|------------|
+| **Scaling** | Slope of accuracy vs `n_wait` — positive = thinking longer helps |
+| **Performance** | Max accuracy across `n_wait` values |
+| **Control** | % of runs reaching target thinking-token budget (approximated by `n_wait`) |
+| **Extraction failure rate** | % of outputs where answer parser found no match |
 
-## Main References
+Comparison axis: condition (`BF_only` / `RAG_only` / `BF+RAG`) × benchmark × model.
+
+## Pre-registered Hypotheses
+
+| Hypothesis | Prediction | Reasoning |
+|-----------|------------|-----------|
+| H1 | BF > RAG on vi_gsm8k | Multi-step math; retrieved text rarely contains calculation steps |
+| H2 | RAG ≥ BF on vimmlu | Factual recall; Wikipedia directly resolves knowledge gaps |
+| H3 | BF+RAG ≥ max(BF, RAG) | Combined benefit when context window not saturated |
+
+## Sprint Status
+
+| Sprint | Status | Focus |
+|--------|--------|-------|
+| Sprint 1 | done | Repo scaffold, BF baseline |
+| Sprint 2 | archived | Gap 1 cross-family (superseded) |
+| **Sprint 3** | **active** | Vietnamese pipeline — RAG module + Vi benchmarks + 3-condition eval |
+| Sprint 4 | pending | Run experiments, populate report |
+
+**Success criteria (minimum):** smoke run → JSON → `summary_vi.csv` with 3+ rows, no crash.
+
+## References
 
 - Paper: <https://arxiv.org/abs/2501.12599>
 - Code: <https://github.com/simplescaling/s1>
-- Dataset: `simplescaling/s1K` on Hugging Face
+- MGSM benchmark: <https://huggingface.co/datasets/juletxara/mgsm>
+- ViMMLU benchmark: <https://huggingface.co/datasets/vilm/vimmlu>
