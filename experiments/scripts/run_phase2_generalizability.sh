@@ -14,7 +14,7 @@ DEFAULT_MODELS=("qwen2.5-3B" "gemma4-E2B-it" "llama3-8B" "phi4-reasoning")
 DEFAULT_BENCHMARKS=("gsm8k" "arc_challenge")
 DEFAULT_N_WAIT=(0 1 2 4)
 DEFAULT_TRIGGER="Wait"
-DEFAULT_N_SAMPLES=20
+DEFAULT_N_SAMPLES=10
 
 if [[ -n "${MODELS:-}" ]]; then
   # shellcheck disable=SC2206
