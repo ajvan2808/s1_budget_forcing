@@ -18,15 +18,12 @@ SUPPORTED_MODELS = {
     "r1-distill-14B":   "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
     "r1-distill-7B":    "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
     "phi4-reasoning":   "microsoft/phi-4",  # Phi-4 has native reasoning capabilities
-    "phi4-14B":         "microsoft/phi-4",
 
     # Base models (cần SFT trên s1K trước khi dùng BF)
     "qwen2.5-7B":       "Qwen/Qwen2.5-7B-Instruct",
     "qwen2.5-3B":       "Qwen/Qwen2.5-3B-Instruct",
-    "llama3.1-8B":      "meta-llama/Meta-Llama-3.1-8B-Instruct",
-    "gemma2-9B":        "google/gemma-2-9b-it",
-    "gemma2-2B":        "google/gemma-2-2b-it",
-    "phi3.5-mini":      "microsoft/Phi-3.5-mini-instruct",
+    "llama3-8B":      "meta-llama/Meta-Llama-3-8B",
+    "gemma4-E2B-it":        "google/gemma-4-E2B-it"
 }
 
 
@@ -97,9 +94,8 @@ def estimate_vram_gb(model_name: str, load_in_4bit: bool = True) -> float:
     # Approximate params count
     param_billions = {
         "s1-32B": 32, "r1-distill-14B": 14, "r1-distill-7B": 7,
-        "qwen2.5-7B": 7, "qwen2.5-3B": 3, "llama3.1-8B": 8,
-        "gemma2-9B": 9, "gemma2-2B": 2, "phi4-reasoning": 14, "phi4-14B": 14,
-        "phi3.5-mini": 4,
+        "qwen2.5-7B": 7, "qwen2.5-3B": 3, "llama3-8B": 8,
+        "gemma4-E2B-it": 2, "phi4-reasoning": 14,
     }
     b = param_billions.get(model_name, 7)
     bytes_per_param = 0.5 if load_in_4bit else 2  # 4-bit = 0.5 byte, bf16 = 2 bytes
