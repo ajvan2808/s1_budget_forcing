@@ -18,11 +18,12 @@ from transformers import PreTrainedTokenizer, PreTrainedModel
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 # Token / string mà model dùng để kết thúc phần suy nghĩ (thinking)
-# Với Qwen2.5 / s1: "<|im_end|>" hoặc token đặc biệt của model
 DEFAULT_EOT_STRINGS = [
     "<|im_end|>",
     "</think>",
+    "####",            # Thường dùng trong GSM8K/DeepSeek
     "\n\nFinal Answer:",
+    "\n\nAnswer:",
 ]
 
 DEFAULT_TRIGGER = "Wait"          # Trigger mặc định (từ paper)
@@ -64,8 +65,20 @@ class BudgetForcingDecoder:
         self.eot_token_ids: set[int] = set()
         for s in self.eot_strings:
             ids = tokenizer.encode(s, add_special_tokens=False)
-            if ids:
+            # We only support single-token EoT for per-token suppression
+            if len(ids) == 1:
                 self.eot_token_ids.add(ids[0])
+            elif ids:
+                # If multi-token, we still add the first token to catch it,
+                # though this is a heuristic and might have false positives
+                # for common tokens like '\n'. 
+                # TODO: Implement proper multi-token sequence suppression
+                if s not in ["\n\nFinal Answer:", "\n\nAnswer:"]:
+                    self.eot_token_ids.add(ids[0])
+
+        # Always include the model's native EOS token
+        if tokenizer.eos_token_id is not None:
+            self.eot_token_ids.add(tokenizer.eos_token_id)
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -188,9 +201,12 @@ class BudgetForcingDecoder:
         """Tách thinking trace và final answer từ full generated text."""
         if isinstance(text, list):
             text = "".join(text)
-        for delimiter in [FINAL_ANSWER_PREFIX, "</think>"]:
+        
+        delimiters = ["</think>", FINAL_ANSWER_PREFIX, "\n\nAnswer:", "####"]
+        for delimiter in delimiters:
             if delimiter in text:
                 parts = text.split(delimiter, 1)
                 return parts[0].strip(), parts[1].strip()
+        
         # Nếu không tìm thấy delimiter, coi toàn bộ là thinking
         return text.strip(), ""

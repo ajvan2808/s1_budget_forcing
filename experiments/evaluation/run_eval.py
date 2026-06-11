@@ -94,8 +94,18 @@ Think carefully before giving your final answer.
 """
 
 
-def format_prompt(question: str) -> str:
-    return THINKING_PROMPT_TEMPLATE.format(question=question)
+def format_prompt(question: str, tokenizer: any) -> str:
+    """Sử dụng chat template của model và ép model bắt đầu bằng <think>."""
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant that solves math problems step by step. Think carefully before giving your final answer."},
+        {"role": "user", "content": question}
+    ]
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    
+    # Ép model bắt đầu bằng <think> nếu chưa có
+    if "<think>" not in prompt:
+        prompt += "<think>\n"
+    return prompt
 
 
 def format_question(sample: dict, cfg: BenchmarkSpec) -> str:
@@ -283,7 +293,7 @@ def run_evaluation(
             question = format_question(sample, cfg)
             ground_truth = str(sample[cfg.answer_key])
 
-            prompt = format_prompt(question)
+            prompt = format_prompt(question, tokenizer)
             input_ids = tokenizer.encode(prompt, return_tensors="pt")
 
             t0 = time.time()

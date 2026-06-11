@@ -10,7 +10,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-DEFAULT_MODELS=("qwen2.5-3B" "gemma2-2B" "phi3.5-mini")
+DEFAULT_MODELS=("qwen2.5-3B" "r1-distill-7B" "gemma2-2B" "phi4-reasoning" "phi3.5-mini")
 DEFAULT_BENCHMARKS=("gsm8k" "arc_challenge")
 DEFAULT_N_WAIT=(0 1 2 4)
 DEFAULT_TRIGGER="Wait"
