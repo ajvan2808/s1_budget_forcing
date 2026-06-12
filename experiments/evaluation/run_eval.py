@@ -47,36 +47,23 @@ class BenchmarkSpec:
 
 
 BENCHMARK_REGISTRY: dict[str, BenchmarkSpec] = {
-    "math500": BenchmarkSpec(
-        hf_path="HuggingFaceH4/MATH-500",
+    # ── Vietnamese benchmarks (Sprint 3+) ──────────────────────────────────────
+    "vi_gsm8k": BenchmarkSpec(
+        hf_path="hllj/vi_gsm8k",
+        hf_name=None,
         hf_split="test",
-        question_key="problem",
-        answer_key="answer",
-        n_total=500,
+        question_key="question",
+        answer_key="answer_number",
+        n_total=250,
     ),
-    "aime24": BenchmarkSpec(
-        hf_path="Maxwell-Jia/AIME_1983_2024",
-        hf_split="test",
-        question_key="Problem",
-        answer_key="Answer",
-        n_total=30,  # AIME 2024 = 30 problems
-    ),
-    "gsm8k": BenchmarkSpec(
-        hf_path="openai/gsm8k",
-        hf_name="main",
+    "vimmlu": BenchmarkSpec(
+        hf_path="tridm/VMLU",
+        hf_name=None,
         hf_split="test",
         question_key="question",
         answer_key="answer",
-        n_total=1319,
-    ),
-    "arc_challenge": BenchmarkSpec(
-        hf_path="allenai/ai2_arc",
-        hf_name="ARC-Challenge",
-        hf_split="test",
-        question_key="question",
-        answer_key="answerKey",
         choices_key="choices",
-        n_total=2590,
+        n_total=4000,
     ),
 }
 

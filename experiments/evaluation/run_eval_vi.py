@@ -50,7 +50,7 @@ from tqdm import tqdm
 
 # Local imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from models.model_loader import SUPPORTED_MODELS, load_model_and_tokenizer
+from models.model_loader import load_model_and_tokenizer
 from budget_forcing import BudgetForcingDecoder
 
 # Import registry from run_eval (reuse BenchmarkSpec + answer logic)
