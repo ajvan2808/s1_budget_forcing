@@ -14,23 +14,22 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 from datasets import load_dataset
 
 BENCHMARKS = {
     "vi_gsm8k": {
-        "hf_path": "juletxara/mgsm",
-        "hf_name": "vi",
+        "hf_path": "hllj/vi_gsm8k",
+        "hf_name": None,
         "split": "test",
         "expected_fields": ["question", "answer", "answer_number"],
         "description": "Multilingual GSM8K — Vietnamese split (250 problems)",
     },
     "vimmlu": {
-        "hf_path": "vilm/vimmlu",
+        "hf_path": "tridm/VMLU",
         "hf_name": None,
         "split": "test",
         "expected_fields": ["question", "answer"],
-        "description": "Vietnamese MMLU — multi-domain knowledge (~4000 questions)",
+        "description": "Vietnamese MMLU — multi-domain knowledge",
     },
 }
 
