@@ -187,7 +187,7 @@ def write_markdown(rows: List[dict], out_path: Path):
 
     for bench, bench_rows in sorted(by_benchmark.items()):
         lines.append(f"\n## {bench}\n")
-        bench_rows = sorted(bench_rows, key=lambda r: (r["model"], r["condition"], r["n_wait"]))
+        bench_rows = sorted(bench_rows, key=lambda r: (r["model"], r["n_wait"]))
 
         # Header
         header = "| " + " | ".join(display_cols) + " |"
@@ -233,13 +233,14 @@ def print_summary(rows: List[dict]):
 
     for bench, bench_rows in sorted(by_bench.items()):
         print(f"\n{bench}:")
-        bench_rows = sorted(bench_rows, key=lambda r: (r["model"], r["condition"], r["n_wait"]))
+        bench_rows = sorted(bench_rows, key=lambda r: (r["model"], r["n_wait"]))
         for row in bench_rows:
             acc = row.get("accuracy")
             acc_str = f"{acc:.1%}" if acc is not None else "--"
             print(
-                f"  {row['model']:20s} | {row['condition']:10s} | "
+                f"  {row['model']:20s} | "
                 f"n_wait={row['n_wait']} | acc={acc_str} | "
+                f"thinks={row.get('avg_thinking_tokens', 0):.0f} tok | "
                 f"fails={row['extraction_failures']}"
             )
     print("="*70)
