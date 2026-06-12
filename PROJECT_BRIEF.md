@@ -1,141 +1,189 @@
 # Project Brief
 
-Updated: 2026-06-11 (Pivot to Vietnamese BF+RAG)
+Updated: 2026-06-12 (BF-only Focus)
 
 ## 1. Project Overview
 
-- **Project:** Budget Forcing + RAG on Vietnamese Reasoning
-- **Goal:** Evaluate whether Budget Forcing (BF) improves reasoning on Vietnamese-language tasks, whether Retrieval-Augmented Generation (RAG) improves it, and — whether **BF+RAG combined outperforms either alone**.
-- **Research Gap:** No published study compares test-time scaling via decoding (BF) against retrieve-more-context (RAG) on Vietnamese. Novel, UIT-relevant, and connects to existing `adaptive-rag-hotpotqa` work.
+- **Project:** Does Test-Time Scaling via Budget Forcing Transfer to Vietnamese Language Reasoning?
+- **Goal:** Evaluate whether Budget Forcing (BF) — a test-time scaling via decoding intervention — transfers to Vietnamese-language reasoning tasks and across multilingual + Vietnamese-specialized model families.
+- **Research Gap:** No published study tests whether BF's positive scaling signal generalizes to Vietnamese. First evaluation of BF on Vietnamese-specialized models (VinAllama, ViStral). Novel, UIT-relevant, and complements existing s1 paper work.
 - **Repository:** `s1_budget_forcing`
 - **Deliverable:** reproducible experiment artifacts + paper-style report
 
 ## 2. Research Questions
 
 **Primary RQ:**
-> Does Budget Forcing work for Vietnamese-language reasoning tasks? Where does test-time-scaling-via-decoding (BF) beat retrieve-more-context (RAG), and can combining them (BF+RAG) produce further gains?
+> Does Budget Forcing work for Vietnamese-language reasoning tasks?  
+> Does the scaling signal transfer across both multilingual and Vietnamese-specialized model families?
 
 **Secondary RQs:**
-- **RQ1:** Does BF produce positive scaling on Vietnamese math (vi-GSM8K, ZaloAI Math)?
-- **RQ2:** Does BF produce positive scaling on Vietnamese knowledge tasks (ViMMLU)?
-- **RQ3:** Does RAG-augmented context reduce BF steps needed to reach peak accuracy?
-- **RQ4:** Are there task types where RAG dominates BF, and vice versa?
 
-## 3. Experimental Conditions
+- **RQ1:** Does BF produce positive scaling on Vietnamese math (vi-GSM8K)?
+- **RQ2:** Does BF produce weak/no scaling on Vietnamese factual tasks (ViMMLU)?
+- **RQ3:** Do Vietnamese-specialized models show different BF responses vs. multilingual models?
+- **RQ4:** What is the interaction between model family (LLaMA, Mistral, Qwen, SEA) and BF effectiveness?
 
-**Three conditions per question:**
+## 3. Experimental Design
 
-| Condition | Description |
-|-----------|-------------|
-| `BF_only` | Budget Forcing decoding (n_wait ∈ {0,1,2}), no external retrieval |
-| `RAG_only` | Retrieve top-k Vietnamese passages, augment prompt, no BF (n_wait=0) |
-| `BF+RAG` | Retrieve + augment prompt, then apply BF (n_wait ∈ {1,2}) |
+**Single condition: BF-only** (no retrieval; RAG is off-scope)
+
+| Component | Details |
+|-----------|---------|
+| **Decoding** | Budget Forcing with n_wait ∈ {0, 1, 2}; n_wait=0 is greedy baseline |
+| **Trigger phrase** | `"Chờ một chút"` (Vietnamese; avoids language-mixing confound) |
+| **Benchmarks** | vi_gsm8k (math), vimmlu (factual) — 2 task types |
 
 **Benchmarks (Vietnamese):**
-- `vi_gsm8k` — MGSM Vietnamese split (`juletxara/mgsm`, lang=`vi`), 250 problems
-- `vimmlu` — Vietnamese MMLU subset (`vilm/vimmlu`), multi-domain
-- `zaloai_math` — ZaloAI Math 2023 (curated locally)
 
-**Models:**
-- `qwen2.5-3B` / `qwen2.5-7B` — multilingual baseline (already in registry)
-- `vinallama-7b` — Vietnamese LLaMA (`vilm/vinallama-7b-chat`)
-- `vistral-7b` — Vietnamese Mistral (`vilm/vistral-7b-chat`)
+- `vi_gsm8k` — MGSM Vietnamese split (`juletxara/mgsm`, lang=`vi`), 250 problems, math reasoning
+- `vimmlu` — Vietnamese MMLU subset (`vilm/vimmlu`), ~4000 questions, factual multi-domain
+
+**Models (5 total):**
+
+- `qwen2.5-3B` — Multilingual instruction baseline (smoke test)
+- `r1-distill-7B` — Reasoning-specialized distill (Qwen base); closest to s1-32B in spirit
+- `vinallama-7b` — Vietnamese-specialized LLaMA (`vilm/vinallama-7b-chat`)
+- `vistral-7b` — Vietnamese-specialized Mistral (`vilm/vistral-7b-chat`)
 - `seallm-7b` — SEA multilingual (`SeaLLMs/SeaLLMs-v3-7B-Chat`)
 
-**RAG Knowledge Base:**
-- Source: Vietnamese Wikipedia (`wikimedia/wikipedia`, `20231101.vi`)
-- Index: FAISS + `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
-- Top-k: 3 passages, each ≤128 tokens
+## 4. Code Implementation Status
 
-## 4. Code Reuse Map (~60% from Gap 1)
-
-| Module | Reuse | Change |
-|--------|-------|--------|
-| `budget_forcing/decoding.py` | ✅ 100% | Language-agnostic, unchanged |
-| `budget_forcing/metrics.py` | ✅ 100% | Unchanged |
-| `models/model_loader.py` | ✅ ~70% | Add Vietnamese model entries |
-| `evaluation/run_eval.py` | ✅ registry only | Add `vi_gsm8k`, `vimmlu` benchmark specs |
-| `evaluation/run_eval_vi.py` | 🆕 new | 3-condition evaluation driver |
-| `rag/` module | 🆕 new | retriever + KB builder + pipeline |
-| `data/download_vi_benchmarks.py` | 🆕 new | Download & inspect Vi benchmarks |
-| `scripts/run_vi_bf_rag.sh` | 🆕 new | 3-condition sweep script |
-| `results/summary_vi.py` | 🆕 new | 3-condition aggregator |
+| Module | Status | Details |
+|--------|--------|---------|
+| `budget_forcing/decoding.py` | ✅ Reused | Language-agnostic BudgetForcingDecoder |
+| `budget_forcing/metrics.py` | ✅ Reused | Scaling/performance/control metrics |
+| `models/model_loader.py` | ✅ Extended | Added Vietnamese models + r1-distill-7B |
+| `evaluation/run_eval.py` | ✅ Extended | Added vi_gsm8k, vimmlu benchmark specs to registry |
+| `evaluation/run_eval_vi.py` | ✅ Complete | BF-only evaluation driver (primary entry point) |
+| `data/download_vi_benchmarks.py` | ✅ Complete | Benchmark validation script |
+| `scripts/run_vi_bf.sh` | ✅ Complete | BF-only sweep orchestration (simplified from original 3-condition plan) |
+| `results/summary_vi.py` | ✅ Complete | JSON → summary_vi.csv + summary_vi.md aggregator |
 
 ## 5. Architecture
 
 ```text
-Vietnamese Benchmarks              Vietnamese Knowledge Base
-(vi-GSM8K / ViMMLU / ZaloAI)      (Vi Wikipedia → FAISS index)
-          |                                    |
-          v                                    v
-  evaluation/run_eval_vi.py  ←──  rag/rag_pipeline.py
-          |
-          ├─ BF_only  → BudgetForcingDecoder(n_wait>0),  no RAG
-          ├─ RAG_only → RAG-augmented prompt,             n_wait=0
-          └─ BF+RAG   → RAG-augmented prompt + BudgetForcingDecoder(n_wait>0)
-          |
-          v
-  results/vi_*/  ← JSON per (model, benchmark, condition, n_wait)
-          |
-          v
-  results/summary_vi.py → summary_vi.csv + summary_vi.md → report tables
+Vietnamese Benchmarks              Budget Forcing Decoder
+(vi-GSM8K / ViMMLU)               (n_wait sweep)
+          |                              |
+          └──────────────┬───────────────┘
+                         v
+           evaluation/run_eval_vi.py
+                  (BF-only driver)
+                         |
+                         v
+          results/vi_*/  ← JSON per (model, benchmark, n_wait)
+                         |
+                         v
+   results/summary_vi.py → summary_vi.csv + summary_vi.md
+
+[RAG modules available but off-scope for current study]
 ```
+
+**Data Flow (BF-only):**
+
+1. Load model (multilingual or Vietnamese-specialized)
+2. Load benchmark (vi_gsm8k or vimmlu)
+3. For each sample and each n_wait ∈ {0, 1, 2}:
+   - Generate response using BudgetForcingDecoder
+   - Extract answer using language-appropriate parser
+   - Evaluate correctness
+4. Output JSON with thinking_tokens, extracted_answer, correct, n_wait
+5. Aggregate across all runs → summary_vi.csv (model × benchmark × n_wait table)
 
 ## 6. Canonical Run Commands
 
-**Smoke test:**
+**Smoke test** — qwen2.5-3B × vi_gsm8k × n_wait {0,1,2} × 5 samples:
+
 ```bash
 MODELS='qwen2.5-3B' BENCHMARKS='vi_gsm8k' \
-CONDITIONS='BF_only RAG_only BF_RAG' \
 N_WAIT_LIST='0 1 2' N_SAMPLES=5 \
 EXTRA_ARGS='--max_tokens 512 --no_4bit' \
-bash experiments/scripts/run_vi_bf_rag.sh
+bash experiments/scripts/run_vi_bf.sh
 ```
 
-**Small matrix (2 models × 2 benchmarks):**
+**Small matrix** — 2 models × 2 benchmarks × 20 samples:
+
 ```bash
-MODELS='qwen2.5-3B vinallama-7b' BENCHMARKS='vi_gsm8k vimmlu' \
-CONDITIONS='BF_only RAG_only BF_RAG' \
+MODELS='qwen2.5-3B r1-distill-7B' BENCHMARKS='vi_gsm8k vimmlu' \
 N_WAIT_LIST='0 1 2' N_SAMPLES=20 \
-bash experiments/scripts/run_vi_bf_rag.sh
+bash experiments/scripts/run_vi_bf.sh
 ```
 
-**Aggregation:**
+**Full matrix** — 5 models × 2 benchmarks × 100 samples:
+
+```bash
+MODELS='qwen2.5-3B r1-distill-7B vinallama-7b vistral-7b seallm-7b' \
+BENCHMARKS='vi_gsm8k vimmlu' \
+N_WAIT_LIST='0 1 2' N_SAMPLES=100 \
+bash experiments/scripts/run_vi_bf.sh
+```
+
+**Aggregation** — convert JSON results to CSV + markdown summary:
+
 ```bash
 python experiments/results/summary_vi.py \
   --results_dir experiments/results/vi_YYYYMMDD_HHMMSS
 ```
 
-## 7. Team Roles
+## 7. Evaluation Metrics
+
+| Metric | Definition |
+|--------|------------|
+| **Scaling** | Slope of accuracy vs n_wait — positive = longer thinking helps |
+| **Performance** | Max accuracy across n_wait ∈ {0, 1, 2} |
+| **Control** | % of runs reaching target thinking-token budget (approximated by n_wait) |
+| **Extraction failure rate** | % of outputs where answer parser found no match (language-specific issue) |
+
+## 8. Hypotheses
+
+| Hypothesis | Prediction | Rationale |
+|-----------|------------|-----------|
+| **H1** | Positive scaling on vi_gsm8k | Multi-step math rewards extended thinking |
+| **H2** | Weak/no scaling on vimmlu | Factual recall doesn't benefit from longer thinking |
+| **H3** | Vi-specialized models show different BF response | Not trained with long-CoT; EoT token differs (`</s>` vs model-specific) |
+| **H4** | Multilingual models generalize better than Vi-specific | Broader training data despite domain specificity loss |
+
+## 9. Team Roles
 
 | Agent | Role | Deliverable |
 |-------|------|-------------|
-| **Agent A** | Coder / Experiment owner | 3-condition pipeline + JSON artifacts |
-| **Agent B** | Writer / Report owner | LaTeX report, Vietnamese BF+RAG framing |
+| **Agent A** | Coder / Experiment owner | BF-only pipeline + JSON artifacts |
+| **Agent B** | Writer / Report owner | LaTeX report, Vietnamese BF framing |
 
-## 8. Sprint Structure
+## 10. Sprint Status
 
-| Sprint | Focus |
-|--------|-------|
-| Sprint 1 (done) | Repo scaffold, initial BF baseline |
-| Sprint 2 (archived) | Gap 1 cross-family (superseded by pivot) |
-| **Sprint 3 (active)** | Vietnamese pivot: RAG module + Vi benchmarks + 3-condition eval |
-| Sprint 4 | Run experiments, collect artifacts, populate report |
+| Sprint | Status | Focus |
+|--------|--------|-------|
+| Sprint 1 | done | Repo scaffold, initial BF baseline (Gap 1) |
+| Sprint 2 | archived | Gap 1 cross-family (superseded by Vietnamese pivot) |
+| **Sprint 3** | **active** | Vietnamese BF pipeline — evaluation driver + model registry + benchmark specs |
+| Sprint 4 | pending | Run full experiments, populate report, error analysis, scaling curves |
 
-## 9. Success Criteria
+## 11. Success Criteria
 
-**Minimum:** smoke run 1 model × vi-GSM8K × 3 conditions × 5 samples → JSON + summary CSV
+**Minimum (MVP):**
 
-**Good:** 2 models × 2 benchmarks × 3 conditions, n_samples ≥ 20, BF vs RAG table in report
+- Smoke run: 1 model × vi-GSM8K × n_wait {0, 1, 2} × 5 samples → JSON + summary_vi.csv
 
-**Strong:** 3+ models × 3 benchmarks, error analysis (parser vs reasoning failures in Vietnamese), scaling curves
+**Good:**
 
-## 10. Key Risks
+- 2 models × 2 benchmarks × n_samples ≥ 20
+- BF scaling table in report
+- Accuracy vs n_wait plot for at least one model-benchmark pair
 
-| Risk | Mitigation |
-|------|------------|
-| Vi benchmark not on HF | MGSM-vi confirmed; ZaloAI curated locally as fallback |
-| Vi model slow on macOS | Qwen2.5 (multilingual) as primary; Vi-specific models secondary |
-| RAG index build time | Pre-build once → `data/vi_wiki_index/`; skip if unavailable |
-| Vi answer extraction fails | Vi-specific parser + log extraction failures separately |
-| BF+RAG prompt overflow | Cap retrieved text at 2×128 tokens |
+**Strong:**
+
+- All 5 models × 2 benchmarks × n_samples ≥ 100
+- Error analysis (parser failure rate vs reasoning failures in Vietnamese)
+- Scaling curves per model family (multilingual vs Vietnamese-specialized)
+- Hypothesis validation for H1–H4
+
+## 12. Key Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|-----------|
+| Vietnamese benchmarks unavailable on HF | High | MGSM-vi confirmed; ViMMLU confirmed; pre-validate via download_vi_benchmarks.py |
+| Vietnamese models slow on consumer GPU/CPU | Medium | Qwen2.5-3B as smoke-test baseline; 4-bit quantization for 7B models |
+| Vietnamese answer extraction fails | Medium | Implement Vietnamese-aware parser; log extraction failures separately by language |
+| Model parameter differences (EoT token) | Low | Documented in model_loader.py; tested in smoke run |
+| Report write-up delayed | Low | Agent B writes from literature + hypotheses; results fill placeholders in Sprint 4 |

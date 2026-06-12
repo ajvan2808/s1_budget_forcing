@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from fractions import Fraction
 from pathlib import Path
+from typing import Any
 from tqdm import tqdm
 
 from datasets import load_dataset
@@ -94,7 +95,7 @@ Think carefully before giving your final answer.
 """
 
 
-def format_prompt(question: str, tokenizer: any) -> str:
+def format_prompt(question: str, tokenizer: Any) -> str:
     """Sử dụng chat template của model và ép model bắt đầu bằng <think>."""
     messages = [
         {"role": "system", "content": "You are a helpful assistant that solves math problems step by step. Think carefully before giving your final answer."},
