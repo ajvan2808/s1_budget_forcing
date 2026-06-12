@@ -1,55 +1,49 @@
 """
-3-condition evaluation driver for Vietnamese BF+RAG experiments.
+BF-only evaluation driver for Vietnamese test-time scaling experiments.
 
-Three conditions evaluated per (model, benchmark, n_wait):
-  BF_only  — Budget Forcing only, no retrieval (n_wait ∈ {0,1,2})
-  RAG_only — Retrieved Vietnamese context, greedy decoding (n_wait=0)
-  BF+RAG   — Retrieved context + Budget Forcing (n_wait ∈ {1,2})
+Research question: Does Budget Forcing (test-time scaling via decoding)
+transfer to Vietnamese-language reasoning?
 
-Output: one JSON file per (condition, n_wait) in --output_dir.
-File naming: {model}__{benchmark}__{condition}__nwait{n_wait}.json
+Conditions: BF_only — n_wait ∈ {0, 1, 2} (n_wait=0 is greedy baseline)
+No retrieval. RAG is off-scope for this study.
+
+Output: one JSON per n_wait in --output_dir.
+File naming: {model}__{benchmark}__nwait{n_wait}.json
 
 Usage:
-    # Single condition
-    python experiments/evaluation/run_eval_vi.py \
-        --model qwen2.5-3B \
-        --benchmark vi_gsm8k \
-        --conditions BF_only \
-        --n_wait 0 1 2 \
-        --n_samples 50
-
-    # All 3 conditions (smoke test)
-    python experiments/evaluation/run_eval_vi.py \
-        --model qwen2.5-3B \
-        --benchmark vi_gsm8k \
-        --conditions BF_only RAG_only BF_RAG \
-        --n_wait 0 1 2 \
-        --n_samples 5 \
-        --max_tokens 512 \
+    # Smoke test (5 samples, no 4-bit)
+    python experiments/evaluation/run_eval_vi.py \\
+        --model qwen2.5-3B \\
+        --benchmark vi_gsm8k \\
+        --n_wait 0 1 2 \\
+        --n_samples 5 \\
+        --max_tokens 512 \\
         --no_4bit
 
-    # With custom RAG index
-    python experiments/evaluation/run_eval_vi.py \
-        --model vinallama-7b \
-        --benchmark vi_gsm8k \
-        --conditions BF_only RAG_only BF_RAG \
-        --n_wait 0 1 2 \
-        --n_samples 20 \
-        --rag_index_dir experiments/data/vi_wiki_index
+    # Full run
+    python experiments/evaluation/run_eval_vi.py \\
+        --model r1-distill-7B \\
+        --benchmark vi_gsm8k \\
+        --n_wait 0 1 2 \\
+        --n_samples 100
+
+    # Vietnamese-specialized model
+    python experiments/evaluation/run_eval_vi.py \\
+        --model vinallama-7b \\
+        --benchmark vimmlu \\
+        --n_wait 0 1 2 \\
+        --n_samples 50
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
-import re
 import sys
 import time
 from datetime import datetime
-from fractions import Fraction
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import torch
 from tqdm import tqdm
@@ -67,16 +61,13 @@ from evaluation.run_eval import (
     check_answer,
     format_question,
 )
-from rag.rag_pipeline import RAGPipeline
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-ALL_CONDITIONS = ["BF_only", "RAG_only", "BF_RAG"]
+VIETNAMESE_THINK_TRIGGER = "Chờ một chút"  # Vietnamese; removes language-mixing confound
 
-DEFAULT_RAG_INDEX_DIR = "experiments/data/vi_wiki_index"
-DEFAULT_RAG_SMOKE_INDEX_DIR = "experiments/data/vi_wiki_index_smoke"
-
-VIETNAMESE_THINK_TRIGGER = "Wait"  # default; can override with --trigger
+# EoT tokens that may appear in Vietnamese-specialized models (LLaMA/Mistral base)
+EXTRA_EOT_TOKENS = ["</s>", "<|endoftext|>"]
 
 
 # ── Prompt formatting ──────────────────────────────────────────────────────────
@@ -84,15 +75,7 @@ VIETNAMESE_THINK_TRIGGER = "Wait"  # default; can override with --trigger
 def format_prompt_vi(question: str, tokenizer, think: bool = True) -> str:
     """
     Format a Vietnamese question using the model's chat template.
-    Optionally append <think> to force chain-of-thought.
-
-    Args:
-        question: The (potentially RAG-augmented) question text
-        tokenizer: HF tokenizer with apply_chat_template support
-        think: If True, append <think> token to prompt
-
-    Returns:
-        Formatted prompt string
+    Appends <think> to prompt when think=True to signal chain-of-thought.
     """
     messages = [
         {
@@ -105,11 +88,18 @@ def format_prompt_vi(question: str, tokenizer, think: bool = True) -> str:
         {"role": "user", "content": question},
     ]
 
-    prompt = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True,
-    )
+    try:
+        prompt = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+    except Exception:
+        # Fallback for models without chat template
+        prompt = (
+            "Bạn là trợ lý thông minh, giải toán và trả lời câu hỏi bằng tiếng Việt.\n\n"
+            f"Người dùng: {question}\nTrợ lý:"
+        )
 
     if think and "<think>" not in prompt:
         prompt += "<think>\n"
@@ -117,69 +107,37 @@ def format_prompt_vi(question: str, tokenizer, think: bool = True) -> str:
     return prompt
 
 
-# ── Condition logic ───────────────────────────────────────────────────────────
+# ── Single n_wait run ─────────────────────────────────────────────────────────
 
-def condition_needs_rag(condition: str) -> bool:
-    return condition in ("RAG_only", "BF_RAG")
-
-def condition_needs_bf(condition: str, n_wait: int) -> bool:
-    """BF is active only when n_wait > 0 and condition is not RAG_only."""
-    if condition == "RAG_only":
-        return False
-    return n_wait > 0
-
-
-def effective_n_wait(condition: str, n_wait: int) -> int:
-    """RAG_only always uses n_wait=0 regardless of the sweep value."""
-    if condition == "RAG_only":
-        return 0
-    return n_wait
-
-
-# ── Single run ────────────────────────────────────────────────────────────────
-
-def run_condition(
-    condition: str,
+def run_bf(
     n_wait: int,
     samples: list,
     cfg: BenchmarkSpec,
     model,
     tokenizer,
-    rag_pipeline: RAGPipeline,
     max_new_tokens: int,
     trigger: str,
     model_name: str,
     benchmark: str,
 ) -> dict:
     """
-    Run evaluation for one (condition, n_wait) combination.
+    Run BF evaluation for one n_wait value.
+    n_wait=0 is the greedy baseline (BF disabled).
 
     Returns:
         dict with accuracy, details list, metadata
     """
-    eff_nwait = effective_n_wait(condition, n_wait)
-    use_rag = condition_needs_rag(condition)
-    use_bf = condition_needs_bf(condition, n_wait)
-
     decoder = BudgetForcingDecoder(model, tokenizer)
 
     correct = 0
     extraction_failures = 0
     details = []
 
-    for i, sample in enumerate(tqdm(samples, desc=f"{condition}/nw={eff_nwait}")):
+    for i, sample in enumerate(tqdm(samples, desc=f"n_wait={n_wait}")):
         question = format_question(sample, cfg)
         ground_truth = str(sample[cfg.answer_key])
 
-        # RAG augmentation
-        if use_rag and rag_pipeline.enabled:
-            augmented_question = rag_pipeline.augment(question)
-            retrieved_tokens = rag_pipeline.last_retrieved_tokens
-        else:
-            augmented_question = question
-            retrieved_tokens = 0
-
-        prompt = format_prompt_vi(augmented_question, tokenizer, think=True)
+        prompt = format_prompt_vi(question, tokenizer, think=(n_wait > 0))
         input_ids = tokenizer.encode(prompt, return_tensors="pt")
 
         t0 = time.time()
@@ -188,7 +146,7 @@ def run_condition(
             output = decoder.generate(
                 input_ids,
                 max_new_tokens=max_new_tokens,
-                n_wait=eff_nwait,
+                n_wait=n_wait,
                 trigger=trigger,
             )
             elapsed = time.time() - t0
@@ -216,7 +174,6 @@ def run_condition(
             "predicted": predicted,
             "correct": is_correct,
             "thinking_tokens": thinking_tokens,
-            "retrieved_tokens": retrieved_tokens,
             "elapsed_sec": round(elapsed, 2),
             "error": error_msg,
         })
@@ -225,17 +182,13 @@ def run_condition(
     accuracy = correct / n if n > 0 else 0.0
 
     return {
-        "condition": condition,
-        "n_wait": eff_nwait,
+        "n_wait": n_wait,
         "n_samples": n,
         "accuracy": round(accuracy, 4),
         "correct": correct,
         "extraction_failures": extraction_failures,
         "avg_thinking_tokens": (
             round(sum(d["thinking_tokens"] for d in details) / n, 1) if n > 0 else 0
-        ),
-        "avg_retrieved_tokens": (
-            round(sum(d["retrieved_tokens"] for d in details) / n, 1) if n > 0 else 0
         ),
         "details": details,
     }
@@ -246,21 +199,19 @@ def run_condition(
 def run_evaluation_vi(
     model_name: str,
     benchmark: str,
-    conditions: List[str],
     n_wait_list: List[int],
     n_samples: int,
     output_dir: str,
-    rag_index_dir: Optional[str] = None,
     trigger: str = VIETNAMESE_THINK_TRIGGER,
     load_in_4bit: bool = True,
     max_new_tokens: int = 2048,
     seed: int = 42,
 ) -> List[dict]:
     """
-    Run all requested conditions × n_wait combinations.
+    Run BF sweep across all n_wait values for one (model, benchmark).
 
     Returns:
-        List of result dicts (one per (condition, n_wait))
+        List of result dicts (one per n_wait)
     """
     import random
     random.seed(seed)
@@ -278,8 +229,8 @@ def run_evaluation_vi(
 
     log(f"[run_eval_vi] Started at {timestamp}")
     log(f"  model={model_name}, benchmark={benchmark}")
-    log(f"  conditions={conditions}, n_wait_list={n_wait_list}, n_samples={n_samples}")
-    log(f"  load_in_4bit={load_in_4bit}, max_new_tokens={max_new_tokens}")
+    log(f"  n_wait_list={n_wait_list}, n_samples={n_samples}")
+    log(f"  trigger='{trigger}', load_in_4bit={load_in_4bit}, max_new_tokens={max_new_tokens}")
 
     # Load benchmark
     from datasets import load_dataset
@@ -295,10 +246,9 @@ def run_evaluation_vi(
         log(f"[FAIL] Cannot load benchmark {benchmark}: {e}")
         raise
 
-    import random
     indices = random.sample(range(len(dataset)), min(n_samples, len(dataset)))
     samples = [dataset[i] for i in indices]
-    log(f"[run_eval_vi] Sampled {len(samples)} questions")
+    log(f"[run_eval_vi] Sampled {len(samples)} questions (seed={seed})")
 
     # Load model
     log(f"[run_eval_vi] Loading model: {model_name}")
@@ -310,122 +260,75 @@ def run_evaluation_vi(
         log(f"[FAIL] Cannot load model {model_name}: {e}")
         raise
 
-    # Determine if RAG is needed at all
-    needs_rag = any(condition_needs_rag(c) for c in conditions)
-    rag_pipeline: RAGPipeline
-
-    if needs_rag:
-        # Resolve index dir
-        index_dirs_to_try = []
-        if rag_index_dir:
-            index_dirs_to_try.append(rag_index_dir)
-        index_dirs_to_try += [DEFAULT_RAG_INDEX_DIR, DEFAULT_RAG_SMOKE_INDEX_DIR]
-
-        loaded_rag = False
-        for idx_dir in index_dirs_to_try:
-            if Path(idx_dir).exists():
-                log(f"[run_eval_vi] Loading RAG index from: {idx_dir}")
-                try:
-                    rag_pipeline = RAGPipeline.from_index(idx_dir)
-                    loaded_rag = True
-                    break
-                except Exception as e:
-                    log(f"  [WARN] Failed to load index at {idx_dir}: {e}")
-
-        if not loaded_rag:
-            log("[WARN] No RAG index found. RAG conditions will be skipped or use empty context.")
-            log("       To build index: python experiments/rag/knowledge_base.py --max_docs 10000")
-            rag_pipeline = RAGPipeline.disabled()
-    else:
-        rag_pipeline = RAGPipeline.disabled()
-
-    # Run conditions
-    all_results = []
     runtime_meta = {
         "cuda_available": torch.cuda.is_available(),
         "mps_available": torch.backends.mps.is_available(),
         "torch_version": torch.__version__,
     }
 
-    for condition in conditions:
-        # Determine which n_wait values to sweep for this condition
-        if condition == "RAG_only":
-            # RAG_only always uses n_wait=0; run once
-            nwaits = [0]
-        elif condition in ("BF_only", "BF_RAG"):
-            nwaits = n_wait_list
-        else:
-            nwaits = n_wait_list
+    # Run n_wait sweep
+    all_results = []
 
-        for nw in nwaits:
-            log(f"\n--- Condition: {condition}, n_wait={nw} ---")
+    for nw in n_wait_list:
+        log(f"\n--- n_wait={nw} ---")
 
-            try:
-                result = run_condition(
-                    condition=condition,
-                    n_wait=nw,
-                    samples=samples,
-                    cfg=cfg,
-                    model=model,
-                    tokenizer=tokenizer,
-                    rag_pipeline=rag_pipeline,
-                    max_new_tokens=max_new_tokens,
-                    trigger=trigger,
-                    model_name=model_name,
-                    benchmark=benchmark,
-                )
-            except Exception as e:
-                log(f"[FAIL] condition={condition} n_wait={nw}: {e}")
-                result = {
-                    "condition": condition,
-                    "n_wait": nw,
-                    "error": str(e),
-                    "accuracy": None,
-                    "correct": 0,
-                    "n_samples": len(samples),
-                    "extraction_failures": 0,
-                    "avg_thinking_tokens": 0,
-                    "avg_retrieved_tokens": 0,
-                    "details": [],
-                }
-
-            log(
-                f"  accuracy={result.get('accuracy')}, "
-                f"correct={result.get('correct')}/{len(samples)}, "
-                f"extraction_failures={result.get('extraction_failures')}"
+        try:
+            result = run_bf(
+                n_wait=nw,
+                samples=samples,
+                cfg=cfg,
+                model=model,
+                tokenizer=tokenizer,
+                max_new_tokens=max_new_tokens,
+                trigger=trigger,
+                model_name=model_name,
+                benchmark=benchmark,
             )
-
-            # Save individual JSON
-            safe_model = model_name.replace("/", "_")
-            safe_bench = benchmark
-            safe_cond = condition
-            fname = f"{safe_model}__{safe_bench}__{safe_cond}__nwait{nw}.json"
-
-            payload = {
-                "model": model_name,
-                "benchmark": benchmark,
-                "language": "vi",
-                "condition": condition,
+        except Exception as e:
+            log(f"[FAIL] n_wait={nw}: {e}")
+            result = {
                 "n_wait": nw,
-                "trigger": trigger,
-                "run_dir": str(run_dir),
-                "timestamp_utc": timestamp,
-                "runtime": runtime_meta,
-                "rag_enabled": condition_needs_rag(condition),
-                "rag_index_dir": rag_index_dir,
-                "load_in_4bit": load_in_4bit,
-                "seed": seed,
-                **result,
+                "error": str(e),
+                "accuracy": None,
+                "correct": 0,
+                "n_samples": len(samples),
+                "extraction_failures": 0,
+                "avg_thinking_tokens": 0,
+                "details": [],
             }
 
-            out_path = run_dir / fname
-            with open(out_path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, indent=2, ensure_ascii=False)
+        log(
+            f"  accuracy={result.get('accuracy')}, "
+            f"correct={result.get('correct')}/{len(samples)}, "
+            f"extraction_failures={result.get('extraction_failures')}"
+        )
 
-            log(f"  Saved: {out_path}")
-            all_results.append(payload)
+        # Save JSON
+        safe_model = model_name.replace("/", "_")
+        fname = f"{safe_model}__{benchmark}__nwait{nw}.json"
 
-    log(f"\n[run_eval_vi] All conditions done. Results in: {run_dir}")
+        payload = {
+            "model": model_name,
+            "benchmark": benchmark,
+            "language": "vi",
+            "n_wait": nw,
+            "trigger": trigger,
+            "run_dir": str(run_dir),
+            "timestamp_utc": timestamp,
+            "runtime": runtime_meta,
+            "load_in_4bit": load_in_4bit,
+            "seed": seed,
+            **result,
+        }
+
+        out_path = run_dir / fname
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+
+        log(f"  Saved: {out_path}")
+        all_results.append(payload)
+
+    log(f"\n[run_eval_vi] Sweep done. Results in: {run_dir}")
     return all_results
 
 
@@ -435,7 +338,7 @@ if __name__ == "__main__":
     default_output_dir = str(Path(__file__).resolve().parents[1] / "results")
 
     parser = argparse.ArgumentParser(
-        description="Vietnamese BF+RAG 3-condition evaluation"
+        description="Vietnamese Budget Forcing evaluation — BF-only n_wait sweep"
     )
     parser.add_argument(
         "--model",
@@ -448,18 +351,11 @@ if __name__ == "__main__":
         choices=list(BENCHMARK_REGISTRY.keys()),
     )
     parser.add_argument(
-        "--conditions",
-        nargs="+",
-        default=ALL_CONDITIONS,
-        choices=ALL_CONDITIONS,
-        help="Conditions to run (default: all 3)",
-    )
-    parser.add_argument(
         "--n_wait",
         nargs="+",
         type=int,
         default=[0, 1, 2],
-        help="n_wait values to sweep for BF conditions (default: 0 1 2)",
+        help="n_wait values to sweep (default: 0 1 2). n_wait=0 is greedy baseline.",
     )
     parser.add_argument(
         "--n_samples",
@@ -473,14 +369,9 @@ if __name__ == "__main__":
         help="Root output directory (a timestamped subdir vi_YYYYMMDD_HHMMSS is created)",
     )
     parser.add_argument(
-        "--rag_index_dir",
-        default=None,
-        help="Path to pre-built FAISS index. Defaults to experiments/data/vi_wiki_index/",
-    )
-    parser.add_argument(
         "--trigger",
         default=VIETNAMESE_THINK_TRIGGER,
-        help=f"BF trigger phrase (default: '{VIETNAMESE_THINK_TRIGGER}')",
+        help=f"BF trigger phrase appended when EoT suppressed (default: '{VIETNAMESE_THINK_TRIGGER}')",
     )
     parser.add_argument(
         "--no_4bit",
@@ -500,11 +391,9 @@ if __name__ == "__main__":
     run_evaluation_vi(
         model_name=args.model,
         benchmark=args.benchmark,
-        conditions=args.conditions,
         n_wait_list=args.n_wait,
         n_samples=args.n_samples,
         output_dir=args.output_dir,
-        rag_index_dir=args.rag_index_dir,
         trigger=args.trigger,
         load_in_4bit=not args.no_4bit,
         max_new_tokens=args.max_tokens,

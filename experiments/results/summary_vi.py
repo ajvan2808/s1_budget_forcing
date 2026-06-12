@@ -1,15 +1,15 @@
 """
-Aggregate Vietnamese BF+RAG experiment results into summary_vi.csv + summary_vi.md.
+Aggregate Vietnamese Budget Forcing results into summary_vi.csv + summary_vi.md.
 
 Reads all JSON files produced by run_eval_vi.py in a results directory,
-computes per-condition metrics, and outputs two files:
+computes per-model scaling metrics, and outputs two files:
   summary_vi.csv   machine-readable, matches column schema in taskboard
   summary_vi.md    human-readable markdown table for the report
 
 Column schema:
-  model, benchmark, language, condition, n_wait,
+  model, benchmark, language, n_wait,
   n_samples, accuracy, scaling, performance,
-  avg_thinking_tokens, avg_retrieved_tokens,
+  avg_thinking_tokens,
   extraction_failures, cuda_available, mps_available,
   run_dir, timestamp_utc
 
@@ -135,14 +135,12 @@ def build_rows(records: List[dict]) -> List[Dict[str, Any]]:
                 "model": model,
                 "benchmark": benchmark,
                 "language": rec.get("language", "vi"),
-                "condition": condition,
                 "n_wait": rec.get("n_wait", 0),
                 "n_samples": rec.get("n_samples", 0),
                 "accuracy": rec.get("accuracy"),
                 "scaling": scaling,
                 "performance": performance,
                 "avg_thinking_tokens": rec.get("avg_thinking_tokens", 0),
-                "avg_retrieved_tokens": rec.get("avg_retrieved_tokens", 0),
                 "extraction_failures": rec.get("extraction_failures", 0),
                 "cuda_available": runtime.get("cuda_available", False),
                 "mps_available": runtime.get("mps_available", False),
@@ -156,9 +154,9 @@ def build_rows(records: List[dict]) -> List[Dict[str, Any]]:
 # ── Output writers ────────────────────────────────────────────────────────────
 
 COLUMNS = [
-    "model", "benchmark", "language", "condition", "n_wait",
+    "model", "benchmark", "language", "n_wait",
     "n_samples", "accuracy", "scaling", "performance",
-    "avg_thinking_tokens", "avg_retrieved_tokens",
+    "avg_thinking_tokens",
     "extraction_failures", "cuda_available", "mps_available",
     "run_dir", "timestamp_utc",
 ]
@@ -180,12 +178,12 @@ def write_markdown(rows: List[dict], out_path: Path):
     for row in rows:
         by_benchmark[row["benchmark"]].append(row)
 
-    lines = ["# Vietnamese BF+RAG Results\n"]
+    lines = ["# Vietnamese Budget Forcing Results\n"]
     lines.append(f"Generated: {__import__('datetime').datetime.utcnow().isoformat(timespec='seconds')}Z\n")
 
-    display_cols = ["model", "condition", "n_wait", "n_samples",
+    display_cols = ["model", "n_wait", "n_samples",
                     "accuracy", "scaling", "performance",
-                    "avg_thinking_tokens", "avg_retrieved_tokens", "extraction_failures"]
+                    "avg_thinking_tokens", "extraction_failures"]
 
     for bench, bench_rows in sorted(by_benchmark.items()):
         lines.append(f"\n## {bench}\n")
@@ -207,14 +205,12 @@ def write_markdown(rows: List[dict], out_path: Path):
 
             cells = [
                 str(row.get("model", "")),
-                str(row.get("condition", "")),
                 str(row.get("n_wait", "")),
                 str(row.get("n_samples", "")),
                 acc_str,
                 scaling_str,
                 perf_str,
                 str(row.get("avg_thinking_tokens", "")),
-                str(row.get("avg_retrieved_tokens", "")),
                 str(row.get("extraction_failures", "")),
             ]
             lines.append("| " + " | ".join(cells) + " |")
@@ -252,7 +248,7 @@ def print_summary(rows: List[dict]):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Aggregate Vietnamese BF+RAG results")
+    parser = argparse.ArgumentParser(description="Aggregate Vietnamese Budget Forcing results")
     parser.add_argument(
         "--results_dir",
         required=True,

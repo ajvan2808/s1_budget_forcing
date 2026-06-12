@@ -1,0 +1,48 @@
+\documentclass[preprint,12pt]{elsarticle}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{natbib}
+
+\journal{Computers and Education: Artificial Intelligence}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Analyzing Generalizability and Optimizing Budget Forcing for Test-time Scaling across Open-source LLMs}
+
+\author[inst1]{Van Hong Hanh}
+\author[inst1]{Phan Hong Hanh}
+\address[inst1]{University of Technology, Ho Chi Minh City, Vietnam}
+
+\begin{abstract}
+This report studies budget forcing from \citet{muennighoff2025s1} as a simple test-time scaling mechanism for reasoning-oriented language models. The project reproduces the core decoding intervention implemented in this repository, evaluates it on mathematical reasoning benchmarks, and analyzes whether increasing the allowed thinking budget improves downstream accuracy under constrained resources. In parallel with the reproduction effort, the report situates budget forcing within the broader landscape of inference-time enhancement methods, including retrieval augmentation and reasoning-oriented post-training. The current artifact is structured to support a narrow and reproducible reproduction: one primary benchmark, one main model configuration, a small sweep over \texttt{n\_wait}, and a trigger-phrase ablation. Final result paragraphs, tables, and figures are designed to be filled directly from the JSON outputs produced by the experiment pipeline.
+\end{abstract}
+
+\begin{keyword}
+test-time scaling \sep budget forcing \sep reasoning language models \sep reproduction study \sep mathematical reasoning
+\end{keyword}
+
+\end{frontmatter}
+
+\input{report/sections/01_introduction}
+\input{report/sections/02_method}
+\input{report/sections/03_metrics}
+\input{report/sections/04_analysis}
+\input{report/sections/05_related_work}
+\input{report/sections/06_experiments}
+\input{report/sections/07_conclusion}
+
+\bibliographystyle{apalike}
+\bibliography{report/references}
+
+\end{document}

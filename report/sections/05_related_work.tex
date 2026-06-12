@@ -1,0 +1,17 @@
+\section{Related Work}\label{sec:related}
+
+\subsection{Reasoning-oriented test-time scaling}
+
+Budget forcing belongs to a broader family of methods that attempt to improve reasoning by increasing or restructuring inference-time computation. The recent wave of reasoning-focused systems includes large proprietary models and open reproductions, but many of them rely on training pipelines or infrastructure that are difficult to reproduce directly. DeepSeek-R1 demonstrates that reinforcement learning can induce self-reflective reasoning behaviors at scale \citep{deepseek2025r1}. Kimi k1.5 similarly explores stronger reasoning through large-scale reinforcement learning and long-context optimization \citep{kimi2025k15}. Against this backdrop, s1 is notable because it argues for a minimal recipe: a compact curated dataset and a decoding intervention rather than a heavy post-training stack \citep{muennighoff2025s1}. Recent systems such as Sky-T1 also pursue open reasoning recipes that reduce dependence on closed-source pipelines \citep{zhang2025skyt1}.
+
+The repository used in this project aligns with that minimal philosophy. It does not attempt to compete with large closed systems directly. Instead, it asks whether the same qualitative trend, namely better answers under controlled increases in test-time compute, can be observed in a small and reproducible setup.
+
+\subsection{Model backbone and evaluation tooling}
+
+The experimental path in this repository relies on open-weight reasoning or instruction-tuned backbones, particularly DeepSeek-R1 distilled checkpoints and Qwen2.5 variants. Qwen2.5 is a relevant backbone family because it provides instruction-tuned models across multiple sizes and explicitly emphasizes long-context and structured-output capabilities \citep{qwenteam2024qwen25}. For evaluation tooling and reproducibility practices, the project also draws on the design philosophy of the Language Model Evaluation Harness, which standardizes benchmark execution and result logging across model backends \citep{gao2024lmharness}.
+
+\subsection{Inference-time augmentation beyond budget forcing}
+
+Inference-time improvement is not limited to longer reasoning traces. Retrieval-augmented generation, for example, supplements the model's internal knowledge with external evidence rather than extending its internal chain of thought. The systematic survey by \citet{li2025ragsurvey} shows how retrieval augmentation can improve reliability, freshness, and domain grounding in educational applications. This contrast is useful for the present report. Budget forcing attempts to extract more value from a model's internal reasoning process, whereas retrieval augmentation changes the information available at inference time. Both approaches increase inference-time effort without retraining the base model, but they solve different failure modes.
+
+For that reason, the comparison between budget forcing and retrieval-augmented generation should be treated as complementary rather than competitive. One extends internal deliberation; the other injects external evidence. A practical future direction is to study whether the two can be combined, for example by retrieving task-relevant context and then allocating a controllable reasoning budget over that context.

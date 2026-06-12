@@ -22,8 +22,13 @@ SUPPORTED_MODELS = {
     # Base models (cần SFT trên s1K trước khi dùng BF)
     "qwen2.5-7B":       "Qwen/Qwen2.5-7B-Instruct",
     "qwen2.5-3B":       "Qwen/Qwen2.5-3B-Instruct",
-    "llama3-8B":      "meta-llama/Meta-Llama-3-8B",
-    "gemma4-E2B-it":        "google/gemma-4-E2B-it"
+    "llama3-8B":        "meta-llama/Meta-Llama-3-8B",
+    "gemma4-E2B-it":    "google/gemma-4-E2B-it",
+
+    # Vietnamese-specialized models (Sprint 3+)
+    "vinallama-7b":     "vilm/vinallama-7b-chat",
+    "vistral-7b":       "vilm/vistral-7b-chat",
+    "seallm-7b":        "SeaLLMs/SeaLLMs-v3-7B-Chat",
 }
 
 
@@ -96,6 +101,8 @@ def estimate_vram_gb(model_name: str, load_in_4bit: bool = True) -> float:
         "s1-32B": 32, "r1-distill-14B": 14, "r1-distill-7B": 7,
         "qwen2.5-7B": 7, "qwen2.5-3B": 3, "llama3-8B": 8,
         "gemma4-E2B-it": 2, "phi4-reasoning": 14,
+        # Vietnamese-specialized
+        "vinallama-7b": 7, "vistral-7b": 7, "seallm-7b": 7,
     }
     b = param_billions.get(model_name, 7)
     bytes_per_param = 0.5 if load_in_4bit else 2  # 4-bit = 0.5 byte, bf16 = 2 bytes

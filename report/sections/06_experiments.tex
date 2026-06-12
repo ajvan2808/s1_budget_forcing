@@ -1,0 +1,160 @@
+\section{Experiments}\label{sec:experiments}
+
+\subsection{Setup}
+
+The repository is configured around a lightweight reproduction protocol. The main benchmark target is \texttt{math500}, the default sample budget is 50 examples for initial runs, and the default \texttt{n\_wait} sweep is \{0, 1, 2, 4\}. The shell wrappers currently default to the \texttt{r1-distill-7B} checkpoint and use 4-bit loading to reduce memory usage.
+
+All reported runs should include the following metadata: model name, quantization setting, hardware, sample count, trigger phrase, wall-clock runtime, and artifact path. These details are essential because the repository is intended as a reproducible coursework artifact rather than a one-off demo.
+
+\subsection{Baseline results}
+
+This subsection will summarize the no-budget-forcing baseline generated from:
+
+\begin{verbatim}
+bash experiments/scripts/run_baseline.sh
+\end{verbatim}
+
+Insert the resulting JSON artifact path here and summarize the observed baseline accuracy, average thinking-token count, and any notable answer-extraction failures.
+
+\subsection{Budget forcing results}
+
+This subsection will summarize the main \texttt{n\_wait} sweep generated from:
+
+\begin{verbatim}
+bash experiments/scripts/run_budget_forcing.sh
+\end{verbatim}
+
+Table~\ref{tab:main-results} is a placeholder for the final accuracy-versus-compute summary.
+
+\begin{table}[t]
+\centering
+\caption{Main budget-forcing results on the primary benchmark. Replace placeholder values with observed numbers from \texttt{experiments/results}.}
+\label{tab:main-results}
+\begin{tabular}{lccc}
+\toprule
+Setting & Accuracy & Avg. thinking tokens & Notes \\
+\midrule
+Baseline (\texttt{n\_wait = 0}) & TBD & TBD & Greedy decoding \\
+Budget forcing (\texttt{n\_wait = 1}) & TBD & TBD & Primary trigger \\
+Budget forcing (\texttt{n\_wait = 2}) & TBD & TBD & Primary trigger \\
+Budget forcing (\texttt{n\_wait = 4}) & TBD & TBD & Primary trigger \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:acc-compute} should plot accuracy against compute level once the notebooks have produced the final figure.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][5cm][c]{0.85\linewidth}{\centering Placeholder for accuracy-versus-compute curve generated from the experiment outputs.}}
+\caption{Accuracy as a function of the budget-forcing compute level.}
+\label{fig:acc-compute}
+\end{figure}
+
+\subsection{Trigger ablation}
+
+The repository already anticipates an alternative trigger, \texttt{Hmm, let me reconsider}. This subsection should compare the default trigger with at least one alternative and discuss whether the longer continuation appears to promote useful verification or merely repetitive continuation.
+
+\begin{table}[t]
+\centering
+\caption{Trigger phrase ablation placeholder.}
+\label{tab:trigger-ablation}
+\begin{tabular}{lccc}
+\toprule
+Trigger & Best accuracy & Avg. thinking tokens & Qualitative note \\
+\midrule
+Wait & TBD & TBD & TBD \\
+Hmm, let me reconsider & TBD & TBD & TBD \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Error analysis}
+
+The final version of this subsection should include a small number of representative cases in which budget forcing changes the outcome. In particular, the report should highlight at least one case where the extra reasoning budget corrects an initially flawed trajectory and at least one case where it causes a loop or a degraded answer. This is more informative than reporting aggregate accuracy alone because it reveals whether the trigger is inducing genuine self-correction.
+
+\subsection{Pending artifacts from Agent A}
+
+The following items still depend on experiment execution:
+
+\begin{itemize}
+  \item baseline JSON artifact path
+  \item budget-forcing sweep JSON artifact path
+  \item trigger ablation JSON artifact path
+  \item final accuracy-versus-compute plot
+  \item case-study excerpts for error analysis
+\end{itemize}
+\label{sec:experiments}
+
+\subsection{Experimental Setup}
+
+The repository exposes a compact experimental workflow. The default configuration targets a reasoning-capable 7B model, the MATH-500 benchmark, and a sweep over \texttt{n\_wait} values of 0, 1, 2, and 4. The evaluation entrypoint is \texttt{experiments/evaluation/run\_eval.py}, while convenience scripts are provided in \texttt{experiments/scripts/}.
+
+At the time of writing, the most important reproducibility variable is hardware. The code supports optional 4-bit loading, but the default path still assumes a runtime environment compatible with the chosen model and quantization stack. Because this repository is being audited from a macOS workspace, the first experimental responsibility is to validate the command path and determine whether full local execution is feasible.
+
+\subsection{Baseline and Budget Forcing Runs}
+
+The planned baseline is a greedy run with \texttt{n\_wait = 0}. The planned budget forcing sweep evaluates \texttt{n\_wait} values $\{0,1,2,4\}$ using the default trigger phrase ``Wait''. A secondary ablation compares that trigger against at least one alternative phrase already wired into the shell script.
+
+Table~\ref{tab:main-results} is reserved for the final numerical results.
+
+\begin{table}[H]
+\centering
+\caption{Main reproduction results. Fill this table after Agent A produces the JSON outputs.}
+\label{tab:main-results}
+\begin{tabular}{lccc}
+\toprule
+Configuration & Accuracy & Avg. thinking tokens & Notes \\
+\midrule
+Baseline ($n\_\text{wait}=0$) & TBA & TBA & pending execution \\
+Budget forcing ($n\_\text{wait}=1$) & TBA & TBA & pending execution \\
+Budget forcing ($n\_\text{wait}=2$) & TBA & TBA & pending execution \\
+Budget forcing ($n\_\text{wait}=4$) & TBA & TBA & pending execution \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Metrics}
+
+The current evaluation code already computes scaling and performance directly from the accuracy sweep. Control may require additional explicit bookkeeping if target budgets are not recorded in the current output schema. Table~\ref{tab:metrics} should be populated from the final JSON artifact.
+
+\begin{table}[H]
+\centering
+\caption{Control, scaling, and performance metrics for the final sweep.}
+\label{tab:metrics}
+\begin{tabular}{lc}
+\toprule
+Metric & Value \\
+\midrule
+Control & TBA \\
+Scaling & TBA \\
+Performance & TBA \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Trigger Ablation}
+
+The repository plan proposes an ablation over trigger phrases such as ``Wait'' and ``Hmm, let me reconsider''. This is a useful experiment because budget forcing assumes that the trigger phrase can coax the model into productive reflection instead of degenerate repetition. Table~\ref{tab:trigger} is reserved for that comparison.
+
+\begin{table}[H]
+\centering
+\caption{Trigger phrase ablation.}
+\label{tab:trigger}
+\begin{tabular}{lcc}
+\toprule
+Trigger & Accuracy & Avg. thinking tokens \\
+\midrule
+Wait & TBA & TBA \\
+Hmm, let me reconsider & TBA & TBA \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Environment Log and Blockers}
+
+This subsection should record the actual machine, package environment, model choice, and execution blockers encountered by Agent A. If the default configuration cannot run locally, that fact should be documented explicitly rather than hidden. A transparent blocker log improves the scientific value of the reproduction because it clarifies which claims were tested directly and which remained conditional on access to stronger hardware.
+
+\subsection{Interim Interpretation}
+
+Before final results are integrated, the most defensible interim conclusion is that the repository implements the intended experiment surface but has not yet completed the full evidence loop from code to saved artifact. The sprint goal is to close that gap by either producing the JSON outputs or documenting the exact operational reason why that could not be completed in the current environment.

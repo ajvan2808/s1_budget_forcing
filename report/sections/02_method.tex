@@ -1,0 +1,21 @@
+\section{Method Summary}\label{sec:method}
+
+\subsection{s1 and the s1K data curation strategy}
+
+The s1 paper proposes a deliberately simple recipe for eliciting reasoning improvements from an open model \citep{muennighoff2025s1}. Instead of relying on very large curated reasoning corpora, the authors construct a 1,000-example training set, s1K, guided by three properties: quality, difficulty, and diversity. The key claim is that a small but carefully filtered dataset can be sufficient when paired with a model family that already has a usable latent reasoning prior.
+
+Although this repository does not reproduce the full supervised fine-tuning stage, the project plan and codebase inherit the paper's framing. The existing scripts assume that a reasoning-capable checkpoint, such as a DeepSeek-R1 distilled model or a Qwen-based instruction model, can serve as the experimental base for budget forcing without re-implementing the entire training pipeline.
+
+\subsection{Budget forcing as a decoding-time intervention}
+
+Budget forcing modifies generation after the model has been prompted to think step by step. In the implementation under \texttt{experiments/budget\_forcing/decoding.py}, the decoder wraps the model's autoregressive generation loop and intervenes in two ways.
+
+First, enforce-minimum behavior suppresses an early end-of-thinking marker and appends a trigger phrase, usually \texttt{Wait}, when the model attempts to stop before the configured thinking budget has been exhausted. This is intended to induce self-reflection or reconsideration. Second, enforce-maximum behavior injects a final-answer prefix when the model exceeds a designated maximum thinking budget, forcing it to transition from internal reasoning to answer production.
+
+The mechanism is appealing from a systems perspective because it does not require retraining, external tools, or a second verification model. At the same time, the same simplicity creates identifiable risks: the trigger phrase may cause repetitive loops, reasoning quality may degrade as the trace becomes longer, and the intervention may interact differently with different chat templates or end-of-turn markers.
+
+\subsection{Local pipeline in this repository}
+
+The main experiment entrypoint is \texttt{experiments/evaluation/run\_eval.py}. It formats a math-oriented chat prompt, loads a benchmark from Hugging Face datasets, runs the configured model through the budget-forcing decoder, extracts a predicted answer, and computes accuracy by comparing it with the benchmark answer. Shell wrappers under \texttt{experiments/scripts/} expose a baseline run and a sweep over \texttt{n\_wait} values.
+
+This repository therefore supports a direct reproduction pattern: baseline decoding with \texttt{n\_wait = 0}, followed by budget-forcing runs for \texttt{n\_wait = 1, 2, 4}, optionally repeated with an alternative trigger phrase. The outputs are serialized as JSON files in \texttt{experiments/results/}, which then serve as the data source for notebooks, plots, and the final report.

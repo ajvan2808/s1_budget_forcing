@@ -1,31 +1,30 @@
-# Report Outline: Vietnamese BF+RAG Study
+# Report Outline: Vietnamese BF Transfer Study
 
-Updated: 2026-06-11 (Pivot from Gap 1 to Vietnamese BF+RAG)
+Updated: 2026-06-12 (Pivot from BF+RAG to BF-only transfer study)
 
 ## Working Title
 
-**Budget Forcing on Vietnamese Reasoning: Test-Time Scaling vs. Retrieval Augmentation**
+**Does Test-Time Scaling via Budget Forcing Transfer to Vietnamese Language Reasoning?**
 
 ## Central Claim to Test
 
-On Vietnamese-language reasoning tasks, two complementary strategies can improve LLM outputs:
-(1) **Budget Forcing (BF)** — think longer via decoding-time extension; and
-(2) **RAG** — know more via retrieved Vietnamese Wikipedia context.
-This report is the first published head-to-head comparison of these two strategies on
-Vietnamese benchmarks, and tests whether combining them (BF+RAG) produces further gains.
+Budget Forcing (BF) — a decoding-time intervention that suppresses end-of-thought tokens to
+extend chain-of-thought reasoning — was originally validated on English benchmarks with the
+Qwen model family. This report is the first study to evaluate whether BF's positive test-time
+scaling signal transfers to (1) Vietnamese-language benchmarks and (2) Vietnamese-specialized
+model families that were not trained with long chain-of-thought data.
 
 ---
 
 ## 1. Introduction
 
-- Vietnamese as an underrepresented language in reasoning benchmarks.
-- Two complementary scaling strategies: BF (thinking longer) vs RAG (knowing more).
-- Research gap: no prior BF study on Vietnamese; no BF vs RAG comparison on any low-resource language.
-- Connection to existing `adaptive-rag-hotpotqa` work (RAG module reuse).
+- Vietnamese as an underrepresented language in reasoning benchmarks and test-time scaling research.
+- Budget Forcing: simple, inference-only intervention from s1 paper — no fine-tuning required.
+- Research gap: original BF study was English-only on Qwen family. Transfer to other languages and model families untested.
 - Contributions:
-  1. First BF evaluation on Vietnamese reasoning (MGSM-vi, ViMMLU)
-  2. First direct BF vs RAG head-to-head on Vietnamese tasks
-  3. Combined BF+RAG evaluation under controlled conditions
+  1. First BF evaluation on Vietnamese reasoning benchmarks (MGSM-vi, ViMMLU)
+  2. First cross-family BF study including Vietnamese-specialized models (Vinallama, Vistral, SeaLLM)
+  3. Pre-registered hypotheses on scaling behavior by benchmark type and model family
 
 ## 2. Background
 
@@ -56,45 +55,32 @@ Vietnamese benchmarks, and tests whether combining them (BF+RAG) produces furthe
 - **Scaling:** slope of accuracy vs n_wait curve. Positive = thinking longer helps.
 - **Performance:** max accuracy across n_wait values.
 - **Extraction failure rate:** % of outputs where answer parser found no match.
-- Comparison axis: condition (BF_only / RAG_only / BF+RAG) × benchmark × model family.
+- Comparison axis: model family × benchmark × n_wait.
 
 ## 4. Method
 
 ### 4.1 Budget Forcing Decoding
 
 - BudgetForcingDecoder implementation (from s1 codebase, language-agnostic).
-- EoT suppression tokens for Vietnamese models.
-- n_wait sweep: {0, 1, 2}.
-- Trigger phrase: "Wait" (English baseline; "Đợi đã" deferred to future work).
+- EoT suppression tokens: `["<|im_end|>", "</think>", "####", "\n\nFinal Answer:", "\n\nAnswer:", "</s>"]`.
+  - `</s>` added for LLaMA/Mistral-based Vi models (Vinallama, Vistral).
+- n_wait sweep: {0, 1, 2} where n_wait=0 is greedy baseline.
+- Trigger phrase: `"Chờ một chút"` (Vietnamese; removes language-mixing confound vs. paper's `"Wait"`).
 
-### 4.2 RAG Pipeline
+### 4.2 Experimental Design
 
-- Knowledge base: Vietnamese Wikipedia (wikimedia/wikipedia, 20231101.vi).
-- Embedding: `paraphrase-multilingual-MiniLM-L12-v2`, 384-dim, FAISS FlatL2.
-- Retrieval: top-3 passages, ≤128 tokens each.
-- Augmentation template:
-  ```
-  [Ngữ cảnh tham khảo]
-  (1) {passage_1}
-  (2) {passage_2}
-  (3) {passage_3}
+| Variable | Values |
+|----------|--------|
+| Models | qwen2.5-3B, r1-distill-7B, vinallama-7b, vistral-7b, seallm-7b |
+| Benchmarks | vi_gsm8k (MGSM-vi), vimmlu |
+| n_wait | {0, 1, 2} |
+| Total runs | 5 models × 2 benchmarks × 3 n_wait = 30 |
 
-  Câu hỏi: {question}
-  ```
+### 4.3 Hypotheses (pre-registered before results)
 
-### 4.3 Experimental Conditions
-
-| Condition | BF | RAG | n_wait |
-|-----------|----|----|--------|
-| BF_only   | ✓  | ✗  | {0, 1, 2} |
-| RAG_only  | ✗  | ✓  | 0 |
-| BF+RAG    | ✓  | ✓  | {1, 2} |
-
-### 4.4 Hypotheses (pre-registered before results)
-
-- **H1 (BF > RAG on math):** MGSM-vi requires multi-step reasoning; retrieved passages rarely contain calculation steps. Extended thinking helps more than context.
-- **H2 (RAG ≥ BF on knowledge):** ViMMLU factual questions are directly resolvable with retrieved Wikipedia text; extra thinking on incorrect prior knowledge does not help.
-- **H3 (BF+RAG ≥ max):** Combined condition benefits from both — but only when context window is not saturated and retrieved passages are relevant.
+- **H1 (Positive scaling on vi_gsm8k):** Multi-step math rewards extended thinking. BF produces positive scaling slope on reasoning-specialized models (r1-distill-7B, qwen2.5-3B).
+- **H2 (Weak/no scaling on vimmlu):** Factual recall tasks don't benefit from longer thinking; scaling slope near zero or negative.
+- **H3 (Vi-specialized ≠ reasoning-specialized):** Vinallama/Vistral (no long-CoT training) show different, likely weaker, BF response than r1-distill-7B.
 
 ## 5. Related Work
 
@@ -122,9 +108,9 @@ Vietnamese benchmarks, and tests whether combining them (BF+RAG) produces furthe
 
 ### 6.1 Setup
 
-- Models: Qwen2.5-3B (smoke), Qwen2.5-7B, Vinallama-7b, Vistral-7b, SeaLLM-7b.
+- Models: qwen2.5-3B (smoke), r1-distill-7B, vinallama-7b, vistral-7b, seallm-7b.
 - Benchmarks: vi_gsm8k (250 problems), vimmlu (~4000 questions).
-- Compute: 4-bit NF4 quantization (BitsAndBytes); CPU fallback for Qwen2.5-3B.
+- Compute: 4-bit NF4 quantization (BitsAndBytes); Kaggle T4 GPU.
 - n_samples: 5 (smoke), 20 (small matrix), 100+ (full run).
 - Hardware constraints: logged in `experiments/results/BLOCKERS.md`.
 
@@ -132,17 +118,17 @@ Vietnamese benchmarks, and tests whether combining them (BF+RAG) produces furthe
 
 <!-- Populated in Sprint 4 from summary_vi.csv. DO NOT fabricate. -->
 
-| Model | Benchmark | Condition | n_wait=0 | n_wait=1 | n_wait=2 | Scaling | Performance |
-|-------|-----------|-----------|----------|----------|----------|---------|-------------|
-| qwen2.5-3B | vi_gsm8k | BF_only | -- | -- | -- | -- | -- |
-| qwen2.5-3B | vi_gsm8k | RAG_only | -- | -- | -- | -- | -- |
-| qwen2.5-3B | vi_gsm8k | BF+RAG  | -- | -- | -- | -- | -- |
-| qwen2.5-7B | vi_gsm8k | BF_only | -- | -- | -- | -- | -- |
-| ... | ... | ... | ... | ... | ... | ... | ... |
+| Model | Benchmark | n_wait=0 | n_wait=1 | n_wait=2 | Scaling | Performance |
+|-------|-----------|----------|----------|----------|---------|-------------|
+| qwen2.5-3B | vi_gsm8k | -- | -- | -- | -- | -- |
+| r1-distill-7B | vi_gsm8k | -- | -- | -- | -- | -- |
+| vinallama-7b | vi_gsm8k | -- | -- | -- | -- | -- |
+| vistral-7b | vi_gsm8k | -- | -- | -- | -- | -- |
+| seallm-7b | vi_gsm8k | -- | -- | -- | -- | -- |
+| qwen2.5-3B | vimmlu | -- | -- | -- | -- | -- |
+| ... | ... | ... | ... | ... | ... | ... |
 
-### 6.3 BF vs RAG Comparison (per benchmark)
-
-<!-- Add bar/violin plots from summary_vi.csv when artifacts exist. -->
+### 6.3 Scaling Curves by Model Family
 
 ### 6.4 Scaling Curves
 
@@ -156,11 +142,11 @@ Vietnamese benchmarks, and tests whether combining them (BF+RAG) produces furthe
 
 ## 7. Discussion
 
-- **BF on Vietnamese:** Does extended thinking produce positive scaling on Vietnamese math? Is it consistent across model families?
-- **RAG on Vietnamese:** Does Wikipedia retrieval reliably improve factual accuracy? Are retrieved passages in Vietnamese consistently relevant?
-- **BF vs RAG:** Which strategy wins by benchmark type? Does result match H1/H2?
-- **BF+RAG combined:** Does the combination beat either alone? What limits it (context overflow, irrelevant retrieval, reasoning interference)?
-- **Model family effects:** Do Vinallama/Vistral (Vi-specialized) benefit more from BF than Qwen (multilingual)?
+- **BF on Vietnamese:** Does extended thinking produce positive scaling on vi_gsm8k? Is the scaling slope consistent across n_wait values?
+- **Benchmark type effect:** Does BF help more on math reasoning (vi_gsm8k) than factual recall (vimmlu)? Does this match H1/H2?
+- **Model family effects:** Do Vi-specialized models (Vinallama/Vistral — no long-CoT training) show different BF response than reasoning-specialized r1-distill-7B?
+- **Failure modes:** Parser failure rate by model; EoT token mismatch for LLaMA-based models; repetitive loop detection.
+- **Generalizability claim:** Under what conditions can we claim BF "transfers" to Vietnamese?
 
 ## 8. Conclusion
 

@@ -1,24 +1,45 @@
-# Budget Forcing + RAG on Vietnamese Reasoning
+# Does Test-Time Scaling via Budget Forcing Transfer to Vietnamese Language Reasoning?
 
-This project evaluates **Budget Forcing (BF)** on Vietnamese-language reasoning tasks and compares it head-to-head with **Retrieval-Augmented Generation (RAG)**. It is the first published comparison of test-time-scaling-via-decoding against retrieve-more-context on Vietnamese benchmarks.
+This project evaluates **Budget Forcing (BF)** — a decoding-time test-time scaling intervention from the s1 paper — on Vietnamese-language reasoning benchmarks. It is the first study to test whether BF's positive scaling signal transfers to Vietnamese and to Vietnamese-specialized model families.
 
 Based on *s1: Simple Test-Time Scaling* (EMNLP 2025). Repository: `s1_budget_forcing`.
 
 ## Research Question
 
-> Does Budget Forcing work for Vietnamese-language reasoning? Where does thinking longer (BF) beat knowing more (RAG), and can combining them (BF+RAG) produce further gains?
+> Does Budget Forcing work for Vietnamese-language reasoning?
+> Does the scaling signal transfer across both multilingual and Vietnamese-specialized model families?
 
-## Experimental Conditions
+## Experimental Design
 
-| Condition | Description |
-|-----------|-------------|
-| `BF_only` | Budget Forcing decoding (`n_wait` ∈ {0,1,2}), no retrieval |
-| `RAG_only` | Top-3 Vietnamese Wikipedia passages prepended, greedy decoding |
-| `BF+RAG`  | Retrieved context + Budget Forcing (`n_wait` ∈ {1,2}) |
+**Condition:** BF-only — n_wait ∈ {0, 1, 2} where n_wait=0 is the greedy baseline.  
+No retrieval. RAG is off-scope for this study.
 
-**Benchmarks:** `vi_gsm8k` (MGSM-vi, 250 problems) · `vimmlu` (ViMMLU, multi-domain)
+**Benchmarks:**
 
-**Models:** `qwen2.5-3B` / `qwen2.5-7B` (multilingual baseline) · `vinallama-7b` · `vistral-7b` · `seallm-7b`
+| Benchmark | Type | Source |
+|-----------|------|---------|
+| `vi_gsm8k` (MGSM-vi) | Math reasoning | `juletxara/mgsm`, lang=vi, 250 problems |
+| `vimmlu` | Factual multi-domain | `vilm/vimmlu`, ~4000 questions |
+
+**Models:**
+
+| Model | Type | Role |
+|-------|------|------|
+| `qwen2.5-3B` | Multilingual instruction | Smoke-test baseline |
+| `r1-distill-7B` | Reasoning-specialized (Qwen base) | Closest to paper's s1-32B |
+| `vinallama-7b` | Vietnamese-specialized (LLaMA-2 base) | BF on Vi-fine-tuned model |
+| `vistral-7b` | Vietnamese-specialized (Mistral base) | Second Vi comparison |
+| `seallm-7b` | SEA multilingual | Regional baseline |
+
+**Trigger phrase:** `"Chờ một chút"` (Vietnamese; removes language-mixing confound vs. paper's `"Wait"`)
+
+## Pre-registered Hypotheses
+
+| Hypothesis | Prediction | Rationale |
+|-----------|------------|-----------|
+| H1 | Positive scaling on vi_gsm8k | Multi-step math rewards extended thinking |
+| H2 | Weak/no scaling on vimmlu | Factual recall doesn't benefit from longer thinking |
+| H3 | Vi-specialized models show different BF response | Not trained with long-CoT; EoT token differs (`</s>`) |
 
 ## Project Structure
 
@@ -26,31 +47,26 @@ Based on *s1: Simple Test-Time Scaling* (EMNLP 2025). Repository: `s1_budget_for
 s1_budget_forcing/
 ├── PROJECT_BRIEF.md                   ← scope, RQs, risk register
 ├── docs/
-│   ├── brainstorm.md                  ← pivot history + benchmark/model rationale
-│   ├── phase-2-4-taskboard.md         ← sprint checklist (Agent A + B)
+│   ├── brainstorm.md                  ← pivot history + model/benchmark rationale
 │   ├── sprint-1/                      ← archived: repo scaffold
 │   ├── sprint-2/                      ← archived: Gap 1 cross-family (superseded)
-│   └── sprint-3/                      ← active: Vietnamese pipeline
+│   └── sprint-3/                      ← active: Vietnamese BF pipeline
 │       ├── plan.md
-│       ├── agent-a-handoff.md         ← coder mission
-│       └── agent-b-handoff.md         ← writer mission
+│       ├── agent-a-handoff.md
+│       └── agent-b-handoff.md
 ├── experiments/
 │   ├── budget_forcing/
 │   │   ├── decoding.py                ← BudgetForcingDecoder (language-agnostic)
 │   │   └── metrics.py                 ← control / scaling / performance metrics
-│   ├── rag/
-│   │   ├── retriever.py               ← FAISS + multilingual-MiniLM retriever
-│   │   ├── knowledge_base.py          ← Vietnamese Wikipedia index builder
-│   │   └── rag_pipeline.py            ← retrieval + prompt augmentation
 │   ├── models/
 │   │   └── model_loader.py            ← model registry (multilingual + Vi-specific)
 │   ├── evaluation/
 │   │   ├── run_eval.py                ← base registry (BenchmarkSpec, answer logic)
-│   │   └── run_eval_vi.py             ← 3-condition evaluation driver ← main entry point
+│   │   └── run_eval_vi.py             ← BF-only evaluation driver ← main entry point
 │   ├── data/
 │   │   └── download_vi_benchmarks.py  ← validate HF benchmark access
 │   ├── scripts/
-│   │   └── run_vi_bf_rag.sh           ← sweep orchestration
+│   │   └── run_vi_bf.sh               ← BF-only sweep orchestration
 │   └── results/
 │       └── summary_vi.py              ← JSON → summary_vi.csv + summary_vi.md
 └── report/
@@ -81,31 +97,30 @@ Validate Vietnamese benchmarks are accessible:
 uv run python experiments/data/download_vi_benchmarks.py
 ```
 
-Build a small RAG index (smoke-friendly, ~10k articles):
-
-```bash
-uv run python experiments/rag/knowledge_base.py \
-    --output_dir experiments/data/vi_wiki_index_smoke \
-    --max_docs 10000
-```
-
-**Smoke test** — 1 model × vi_gsm8k × 3 conditions × 5 samples:
+**Smoke test** — qwen2.5-3B × vi_gsm8k × n_wait {0,1,2} × 5 samples:
 
 ```bash
 MODELS='qwen2.5-3B' BENCHMARKS='vi_gsm8k' \
-CONDITIONS='BF_only RAG_only BF_RAG' \
 N_WAIT_LIST='0 1 2' N_SAMPLES=5 \
 EXTRA_ARGS='--max_tokens 512 --no_4bit' \
-bash experiments/scripts/run_vi_bf_rag.sh
+bash experiments/scripts/run_vi_bf.sh
 ```
 
 **Small matrix** — 2 models × 2 benchmarks × 20 samples:
 
 ```bash
-MODELS='qwen2.5-3B vinallama-7b' BENCHMARKS='vi_gsm8k vimmlu' \
-CONDITIONS='BF_only RAG_only BF_RAG' \
+MODELS='qwen2.5-3B r1-distill-7B' BENCHMARKS='vi_gsm8k vimmlu' \
 N_WAIT_LIST='0 1 2' N_SAMPLES=20 \
-bash experiments/scripts/run_vi_bf_rag.sh
+bash experiments/scripts/run_vi_bf.sh
+```
+
+**Full matrix** — all 5 models × 2 benchmarks × 100 samples:
+
+```bash
+MODELS='qwen2.5-3B r1-distill-7B vinallama-7b vistral-7b seallm-7b' \
+BENCHMARKS='vi_gsm8k vimmlu' \
+N_WAIT_LIST='0 1 2' N_SAMPLES=100 \
+bash experiments/scripts/run_vi_bf.sh
 ```
 
 Aggregate results:
@@ -124,23 +139,13 @@ uv run python experiments/results/summary_vi.py \
 | **Control** | % of runs reaching target thinking-token budget (approximated by `n_wait`) |
 | **Extraction failure rate** | % of outputs where answer parser found no match |
 
-Comparison axis: condition (`BF_only` / `RAG_only` / `BF+RAG`) × benchmark × model.
-
-## Pre-registered Hypotheses
-
-| Hypothesis | Prediction | Reasoning |
-|-----------|------------|-----------|
-| H1 | BF > RAG on vi_gsm8k | Multi-step math; retrieved text rarely contains calculation steps |
-| H2 | RAG ≥ BF on vimmlu | Factual recall; Wikipedia directly resolves knowledge gaps |
-| H3 | BF+RAG ≥ max(BF, RAG) | Combined benefit when context window not saturated |
-
 ## Sprint Status
 
 | Sprint | Status | Focus |
 |--------|--------|-------|
 | Sprint 1 | done | Repo scaffold, BF baseline |
 | Sprint 2 | archived | Gap 1 cross-family (superseded) |
-| **Sprint 3** | **active** | Vietnamese pipeline — RAG module + Vi benchmarks + 3-condition eval |
+| **Sprint 3** | **active** | Vietnamese BF pipeline — evaluation driver + model registry |
 | Sprint 4 | pending | Run experiments, populate report |
 
 **Success criteria (minimum):** smoke run → JSON → `summary_vi.csv` with 3+ rows, no crash.
@@ -149,5 +154,9 @@ Comparison axis: condition (`BF_only` / `RAG_only` / `BF+RAG`) × benchmark × m
 
 - Paper: <https://arxiv.org/abs/2501.12599>
 - Code: <https://github.com/simplescaling/s1>
+- DeepSeek-R1-Distill-Qwen-7B: <https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B>
 - MGSM benchmark: <https://huggingface.co/datasets/juletxara/mgsm>
 - ViMMLU benchmark: <https://huggingface.co/datasets/vilm/vimmlu>
+- Vinallama: <https://huggingface.co/vilm/vinallama-7b-chat>
+- Vistral: <https://huggingface.co/vilm/vistral-7b-chat>
+- SeaLLM: <https://huggingface.co/SeaLLMs/SeaLLMs-v3-7B-Chat>

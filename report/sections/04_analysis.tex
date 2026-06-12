@@ -1,0 +1,42 @@
+\section{Strengths, Limitations, and Research Gaps}\label{sec:analysis}
+
+\subsection{Strengths}
+
+The main strength of budget forcing is its accessibility. Compared with reinforcement-learning-heavy reasoning pipelines, the method is conceptually compact and locally inspectable. This repository reflects that advantage: the core intervention is implemented in a single decoding wrapper, and the evaluation path is understandable without reverse-engineering a large training stack.
+
+Another strength is reproducibility by decomposition. Even when the full s1 training setup is not reproduced, the core claim about inference-time behavior can still be examined through targeted experiments. This makes budget forcing a useful case study for academic courses that want to study reasoning behavior without retraining a frontier-scale model.
+
+\subsection{Limitations}
+
+The simplicity of the method also exposes its limits. First, budget forcing depends on model-specific control tokens and prompt structure. The repository currently assumes reasoning-style chat templates and end-of-turn conventions that may not transfer cleanly across model families. Second, extending the reasoning trace with a fixed trigger phrase may encourage repetitive or low-value continuation rather than meaningful self-correction. Third, the local implementation is benchmarked around math tasks, so conclusions should not be generalized to other domains without further evidence.
+
+From a practical standpoint, infrastructure remains a major constraint. The repository defaults to 4-bit loading with bitsandbytes and is optimized for CUDA-capable hardware. That makes the reproduction pathway more fragile on macOS or CPU-only systems, where a complete run may be infeasible even if the code itself is logically correct.
+
+\subsection{Research gaps}
+
+The project plan identifies trigger optimization as the most feasible extension for the group. This is a sensible target because trigger choice is both experimentally accessible and theoretically underexplored. A short phrase such as \texttt{Wait} may work as a reflection cue, but it is unclear when such a cue promotes verification versus when it merely prolongs the trajectory.
+
+Two additional gaps remain important. The first is anti-repetition control: a system that extends reasoning should ideally also detect unproductive loops. The second is task breadth. If budget forcing is to be treated as a general test-time scaling primitive, it should be evaluated beyond competition-style mathematics, including tasks where factual grounding, tool use, or retrieval matter more than pure symbolic reasoning.
+\label{sec:analysis}
+
+\subsection{Strengths of the s1 Framing}
+
+The main strength of s1 is methodological clarity. By reducing the story to a curated reasoning dataset and a lightweight decoding-time controller, the paper makes test-time scaling feel accessible and reproducible compared with opaque proprietary reasoning systems. This is academically valuable because it exposes a concrete mechanism that can be audited, modified, and tested on new models.
+
+Another strength is sample efficiency. The claim that a relatively small reasoning dataset can support strong downstream behavior challenges the assumption that ever-larger supervised corpora are always necessary. Even if exact performance numbers vary across replications, the idea that data quality and inference control can substitute for brute-force scale is an important hypothesis.
+
+\subsection{Limitations Relevant to Reproduction}
+
+The first limitation is infrastructure dependence. Even a ``simple'' reasoning reproduction can become expensive when it relies on large reasoning-capable models, quantization libraries, and benchmark-scale generation. Course-project environments often differ sharply from the CUDA-heavy setups implicitly assumed by many open-source reasoning papers.
+
+The second limitation is domain concentration. The original framing is especially compelling in mathematical reasoning, but that also narrows the evidence base. It remains unclear how much of the observed benefit transfers to non-math settings without additional adaptation.
+
+The third limitation is behavioral instability. Trigger-based reasoning extension can produce useful self-correction, but it can also create repetitive loops or longer incorrect chains. That makes trigger selection and stopping criteria natural ablation targets.
+
+\subsection{Research Gaps for This Project}
+
+This repository is already aligned with one concrete research gap: trigger optimization. The project plan explicitly identifies trigger-phrase ablation as a manageable extension, and the existing script surface already includes an alternative trigger. This is a sensible direction because the trigger is both conceptually central and experimentally cheap to vary.
+
+Another gap concerns evaluation realism under constrained hardware. Many reproduction attempts fail not because the underlying idea is wrong, but because local execution conditions differ from the source setting. Documenting those constraints carefully turns an otherwise frustrating engineering limitation into a useful piece of scientific context.
+
+Finally, there is a broader gap between internal-knowledge scaling and external-knowledge augmentation. The reference RAG survey shows that another major line of inference-time improvement adds retrieved information instead of lengthening reasoning alone \citep{li2025rag}. Comparing these two paradigms sharpens the conceptual contribution of budget forcing: it primarily tries to improve how a model thinks, not what external evidence it sees.
