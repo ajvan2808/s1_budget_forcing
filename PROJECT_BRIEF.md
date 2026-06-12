@@ -75,8 +75,6 @@ Vietnamese Benchmarks              Budget Forcing Decoder
                          |
                          v
    results/summary_vi.py → summary_vi.csv + summary_vi.md
-
-[RAG modules available but off-scope for current study]
 ```
 
 **Data Flow (BF-only):**
