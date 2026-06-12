@@ -21,14 +21,14 @@ BENCHMARKS = {
         "hf_path": "hllj/vi_gsm8k",
         "hf_name": None,
         "split": "test",
-        "expected_fields": ["question", "answer", "answer_number"],
+        "expected_fields": ["question", "answer", "index", "explanation"],
         "description": "Multilingual GSM8K — Vietnamese split (250 problems)",
     },
     "vimmlu": {
         "hf_path": "tridm/VMLU",
         "hf_name": None,
         "split": "test",
-        "expected_fields": ["question", "answer"],
+        "expected_fields": ["question", "answer", "choices", "id"],
         "description": "Vietnamese MMLU — multi-domain knowledge",
     },
 }

@@ -53,7 +53,7 @@ BENCHMARK_REGISTRY: dict[str, BenchmarkSpec] = {
         hf_name=None,
         hf_split="test",
         question_key="question",
-        answer_key="answer_number",
+        answer_key="answer",   # "answer_number" absent in this dataset variant
         n_total=250,
     ),
     "vimmlu": BenchmarkSpec(

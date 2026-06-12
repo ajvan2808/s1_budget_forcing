@@ -44,6 +44,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import List
+from zoneinfo import ZoneInfo
 
 import torch
 from tqdm import tqdm
@@ -217,7 +218,7 @@ def run_evaluation_vi(
     random.seed(seed)
 
     # Setup output directory
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(tz=ZoneInfo("Asia/Ho_Chi_Minh")).strftime("%Y%m%d_%H%M%S")
     run_dir = Path(output_dir) / f"vi_{timestamp}"
     run_dir.mkdir(parents=True, exist_ok=True)
     log_path = run_dir / "run.log"

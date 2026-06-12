@@ -54,6 +54,10 @@ if [[ ! -f "$EVAL_SCRIPT" ]]; then
     exit 1
 fi
 
+# cd to repo root so all relative paths and Python imports work correctly.
+# This also avoids quoting issues with spaces in the repo path.
+cd "$REPO_ROOT"
+
 echo "======================================================================"
 echo "Vietnamese Budget Forcing Sweep (BF-only)"
 echo "  Models:     $MODELS"
@@ -69,6 +73,9 @@ echo ""
 # Build --n_wait args
 N_WAIT_ARGS="--n_wait $N_WAIT_LIST"
 
+# Use a relative path so spaces in REPO_ROOT don't break the command.
+EVAL_REL="experiments/evaluation/run_eval_vi.py"
+
 # ── Sweep ─────────────────────────────────────────────────────────────────────
 TOTAL_RUNS=0
 FAILED_RUNS=0
@@ -79,19 +86,17 @@ for MODEL in $MODELS; do
         echo "  Model: $MODEL  |  Benchmark: $BENCHMARK"
         echo "----------------------------------------------------------------------"
 
-        CMD="python $EVAL_SCRIPT \
-            --model $MODEL \
-            --benchmark $BENCHMARK \
-            $N_WAIT_ARGS \
-            --n_samples $N_SAMPLES \
-            --output_dir $OUTPUT_DIR \
-            --seed $SEED \
-            $EXTRA_ARGS"
-
-        echo "  Running: $CMD"
+        echo "  Running python $EVAL_REL --model $MODEL --benchmark $BENCHMARK ..."
         echo ""
 
-        if eval "$CMD"; then
+        if python "$EVAL_REL" \
+            --model "$MODEL" \
+            --benchmark "$BENCHMARK" \
+            $N_WAIT_ARGS \
+            --n_samples "$N_SAMPLES" \
+            --output_dir "$OUTPUT_DIR" \
+            --seed "$SEED" \
+            $EXTRA_ARGS; then
             echo ""
             echo "  [OK] $MODEL × $BENCHMARK completed."
             TOTAL_RUNS=$((TOTAL_RUNS + 1))

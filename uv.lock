@@ -3891,7 +3891,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "accelerate", specifier = ">=0.27.0" },
-    { name = "bitsandbytes", specifier = ">=0.43.0" },
+    { name = "bitsandbytes", specifier = ">=0.46.1" },
     { name = "datasets", specifier = ">=2.18.0" },
     { name = "ipywidgets", specifier = ">=8.1.0" },
     { name = "jupyter", specifier = ">=1.0.0" },
