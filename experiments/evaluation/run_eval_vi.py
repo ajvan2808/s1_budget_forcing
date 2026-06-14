@@ -143,6 +143,8 @@ def run_bf(
 
         t0 = time.time()
         error_msg = None
+        answer_text_saved = ""
+        full_text_snippet = ""
         try:
             output = decoder.generate(
                 input_ids,
@@ -152,10 +154,23 @@ def run_bf(
             )
             elapsed = time.time() - t0
 
-            predicted = extract_answer(output["answer_text"])
+            answer_text = output.get("answer_text", "")
+            thinking_text = output.get("thinking_text", "")
+            full_text = output.get("full_text", "")
+            answer_text_saved = answer_text[:300]
+            full_text_snippet = full_text[:300]
+
+            # Primary: extract from answer_text (after </think> or Final Answer:)
+            predicted = extract_answer(answer_text)
+
+            # Fallback: for non-reasoning models (e.g. Qwen2.5-3B), there is no
+            # </think> delimiter so everything lands in thinking_text and answer_text=""
+            # Extract from the full generated text instead.
+            if not predicted:
+                predicted = extract_answer(thinking_text or full_text)
+
             if not predicted:
                 extraction_failures += 1
-                predicted = ""
             is_correct = check_answer(predicted, ground_truth)
             correct += int(is_correct)
             thinking_tokens = output.get("thinking_tokens", 0)
@@ -175,6 +190,8 @@ def run_bf(
             "predicted": predicted,
             "correct": is_correct,
             "thinking_tokens": thinking_tokens,
+            "answer_text": answer_text_saved,   # first 300 chars — for debugging
+            "full_text": full_text_snippet,      # first 300 chars — for debugging
             "elapsed_sec": round(elapsed, 2),
             "error": error_msg,
         })

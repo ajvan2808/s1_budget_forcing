@@ -59,11 +59,11 @@ BENCHMARK_REGISTRY: dict[str, BenchmarkSpec] = {
     "vimmlu": BenchmarkSpec(
         hf_path="tridm/VMLU",
         hf_name=None,
-        hf_split="test",
+        hf_split="validation",  # test split has answer=None; validation has 744 labelled samples
         question_key="question",
         answer_key="answer",
         choices_key="choices",
-        n_total=4000,
+        n_total=744,
     ),
 }
 
@@ -97,22 +97,26 @@ def format_prompt(question: str, tokenizer: Any) -> str:
 
 
 def format_question(sample: dict, cfg: BenchmarkSpec) -> str:
-    """Format câu hỏi, có hỗ trợ multiple-choice benchmark như ARC-Challenge."""
+    """Format câu hỏi, có hỗ trợ multiple-choice benchmark như VMLU, ARC-Challenge."""
     question = str(sample[cfg.question_key])
     if not cfg.choices_key:
         return question
 
     choices = sample.get(cfg.choices_key)
-    if not isinstance(choices, dict):
-        return question
 
-    labels = choices.get("label", [])
-    texts = choices.get("text", [])
-    if not labels or not texts:
-        return question
+    # VMLU flat list: ["A. text", "B. text", ...] — items already include letter prefix
+    if isinstance(choices, list) and choices:
+        return f"{question}\n\nOptions:\n" + "\n".join(str(c) for c in choices)
 
-    option_lines = [f"{lab}. {txt}" for lab, txt in zip(labels, texts)]
-    return f"{question}\n\nOptions:\n" + "\n".join(option_lines)
+    # ARC-Challenge / other dict format: {"label": [...], "text": [...]}
+    if isinstance(choices, dict):
+        labels = choices.get("label", [])
+        texts = choices.get("text", [])
+        if labels and texts:
+            option_lines = [f"{lab}. {txt}" for lab, txt in zip(labels, texts)]
+            return f"{question}\n\nOptions:\n" + "\n".join(option_lines)
+
+    return question
 
 
 # ── Answer extraction ─────────────────────────────────────────────────────────

@@ -121,12 +121,13 @@ class BudgetForcingDecoder:
         thinking_token_count = 0
 
         with torch.no_grad():
-            for step in range(max_new_tokens):
-                # ── Forward pass ──────────────────────────────────────────────
-                outputs = self.model(current_ids)
-                logits = outputs.logits[:, -1, :]  # [1, vocab_size]
+            # ── Prefill: run prompt through model once, cache KV states ──────
+            outputs = self.model(current_ids, use_cache=True)
+            past_key_values = outputs.past_key_values
+            logits = outputs.logits[:, -1, :]  # [1, vocab_size]
 
-                # ── Sample or greedy ──────────────────────────────────────────
+            for step in range(max_new_tokens):
+                # ── Sample or greedy from current logits ──────────────────────
                 if do_sample and temperature > 0:
                     probs = torch.softmax(logits / temperature, dim=-1)
                     next_token = torch.multinomial(probs, num_samples=1)
@@ -141,15 +142,19 @@ class BudgetForcingDecoder:
                     and not thinking_ended
                     and thinking_token_count >= max_thinking_tokens
                 ):
-                    # Chèn EoT + Final Answer prompt, bỏ qua token vừa sinh
+                    # Chèn EoT + Final Answer prompt, bỏ qua token vừa sinh.
+                    # Prefill injected tokens qua KV cache để lấy logits tiếp theo.
                     fa_ids = self.tokenizer.encode(
                         FINAL_ANSWER_PREFIX, add_special_tokens=False
                     )
+                    fa_tensor = torch.tensor([fa_ids], device=self.device)
                     generated_tokens.extend(fa_ids)
-                    current_ids = torch.cat(
-                        [current_ids, torch.tensor([fa_ids], device=self.device)],
-                        dim=1,
+                    current_ids = torch.cat([current_ids, fa_tensor], dim=1)
+                    inject_out = self.model(
+                        fa_tensor, past_key_values=past_key_values, use_cache=True
                     )
+                    past_key_values = inject_out.past_key_values
+                    logits = inject_out.logits[:, -1, :]
                     thinking_ended = True
                     continue  # tiếp tục sinh phần answer
 
@@ -159,19 +164,23 @@ class BudgetForcingDecoder:
                     and token_id in self.eot_token_ids
                     and waits_triggered < n_wait
                 ):
-                    # Suppress EoT token, append trigger phrase thay vào
+                    # Suppress EoT token, append trigger phrase thay vào.
+                    # Prefill trigger qua KV cache để lấy logits tiếp theo.
                     trigger_ids = self.tokenizer.encode(
                         f"\n{trigger}", add_special_tokens=False
                     )
+                    trigger_tensor = torch.tensor([trigger_ids], device=self.device)
                     generated_tokens.extend(trigger_ids)
-                    current_ids = torch.cat(
-                        [current_ids, torch.tensor([trigger_ids], device=self.device)],
-                        dim=1,
+                    current_ids = torch.cat([current_ids, trigger_tensor], dim=1)
+                    inject_out = self.model(
+                        trigger_tensor, past_key_values=past_key_values, use_cache=True
                     )
+                    past_key_values = inject_out.past_key_values
+                    logits = inject_out.logits[:, -1, :]
                     waits_triggered += 1
                     continue
 
-                # ── Normal token ──────────────────────────────────────────────
+                # ── Normal token: accept, advance KV cache by one step ────────
                 generated_tokens.append(token_id)
                 current_ids = torch.cat(
                     [current_ids, next_token.to(self.device)], dim=1
@@ -185,6 +194,15 @@ class BudgetForcingDecoder:
                 # Dừng khi gặp EOS
                 if token_id == self.tokenizer.eos_token_id:
                     break
+
+                # Advance KV cache: pass only the new token, not the full sequence
+                step_out = self.model(
+                    next_token.to(self.device),
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                )
+                past_key_values = step_out.past_key_values
+                logits = step_out.logits[:, -1, :]
 
         # ── Decode kết quả ────────────────────────────────────────────────────
         full_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=False)
