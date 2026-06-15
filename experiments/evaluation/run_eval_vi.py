@@ -163,11 +163,19 @@ def run_bf(
             # Primary: extract from answer_text (after </think> or Final Answer:)
             predicted = extract_answer(answer_text)
 
-            # Fallback: for non-reasoning models (e.g. Qwen2.5-3B), there is no
+            # Fallback 1: for non-reasoning models (e.g. Qwen2.5-3B), there is no
             # </think> delimiter so everything lands in thinking_text and answer_text=""
             # Extract from the full generated text instead.
             if not predicted:
                 predicted = extract_answer(thinking_text or full_text)
+
+            # Fallback 2: for n_wait>0, the BF trigger ("Chờ một chút") becomes
+            # the last line, overriding the actual answer. Try extracting from the
+            # portion of full_text BEFORE the first trigger occurrence.
+            if not predicted and n_wait > 0:
+                pre_trigger = (full_text or thinking_text).split(trigger)[0]
+                if pre_trigger.strip():
+                    predicted = extract_answer(pre_trigger)
 
             if not predicted:
                 extraction_failures += 1
