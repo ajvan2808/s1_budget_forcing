@@ -169,13 +169,16 @@ def run_bf(
             if not predicted:
                 predicted = extract_answer(thinking_text or full_text)
 
-            # Fallback 2: for n_wait>0, the BF trigger ("Chờ một chút") becomes
-            # the last line, overriding the actual answer. Try extracting from the
-            # portion of full_text BEFORE the first trigger occurrence.
-            if not predicted and n_wait > 0:
-                pre_trigger = (full_text or thinking_text).split(trigger)[0]
+            # Fallback 2: for n_wait>0, the BF trigger ("Chờ một chút") can
+            # become the last line, overriding the actual computed answer.
+            # If prediction is empty OR starts with the trigger phrase, search
+            # the text BEFORE the first trigger injection instead.
+            if n_wait > 0 and (not predicted or predicted.strip().startswith(trigger)):
+                pre_trigger = (thinking_text or full_text).split(trigger)[0]
                 if pre_trigger.strip():
-                    predicted = extract_answer(pre_trigger)
+                    pre_pred = extract_answer(pre_trigger)
+                    if pre_pred:
+                        predicted = pre_pred
 
             if not predicted:
                 extraction_failures += 1
