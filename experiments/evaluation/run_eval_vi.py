@@ -44,13 +44,14 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import List
+from zoneinfo import ZoneInfo
 
 import torch
 from tqdm import tqdm
 
 # Local imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from models.model_loader import SUPPORTED_MODELS, load_model_and_tokenizer
+from models.model_loader import load_model_and_tokenizer
 from budget_forcing import BudgetForcingDecoder
 
 # Import registry from run_eval (reuse BenchmarkSpec + answer logic)
@@ -142,6 +143,8 @@ def run_bf(
 
         t0 = time.time()
         error_msg = None
+        answer_text_saved = ""
+        full_text_snippet = ""
         try:
             output = decoder.generate(
                 input_ids,
@@ -151,10 +154,34 @@ def run_bf(
             )
             elapsed = time.time() - t0
 
-            predicted = extract_answer(output["answer_text"])
+            answer_text = output.get("answer_text", "")
+            thinking_text = output.get("thinking_text", "")
+            full_text = output.get("full_text", "")
+            answer_text_saved = answer_text[:300]
+            full_text_snippet = full_text[:300]
+
+            # Primary: extract from answer_text (after </think> or Final Answer:)
+            predicted = extract_answer(answer_text)
+
+            # Fallback 1: for non-reasoning models (e.g. Qwen2.5-3B), there is no
+            # </think> delimiter so everything lands in thinking_text and answer_text=""
+            # Extract from the full generated text instead.
+            if not predicted:
+                predicted = extract_answer(thinking_text or full_text)
+
+            # Fallback 2: for n_wait>0, the BF trigger ("Chờ một chút") can
+            # become the last line, overriding the actual computed answer.
+            # If prediction is empty OR starts with the trigger phrase, search
+            # the text BEFORE the first trigger injection instead.
+            if n_wait > 0 and (not predicted or predicted.strip().startswith(trigger)):
+                pre_trigger = (thinking_text or full_text).split(trigger)[0]
+                if pre_trigger.strip():
+                    pre_pred = extract_answer(pre_trigger)
+                    if pre_pred:
+                        predicted = pre_pred
+
             if not predicted:
                 extraction_failures += 1
-                predicted = ""
             is_correct = check_answer(predicted, ground_truth)
             correct += int(is_correct)
             thinking_tokens = output.get("thinking_tokens", 0)
@@ -174,6 +201,8 @@ def run_bf(
             "predicted": predicted,
             "correct": is_correct,
             "thinking_tokens": thinking_tokens,
+            "answer_text": answer_text_saved,   # first 300 chars — for debugging
+            "full_text": full_text_snippet,      # first 300 chars — for debugging
             "elapsed_sec": round(elapsed, 2),
             "error": error_msg,
         })
@@ -217,7 +246,7 @@ def run_evaluation_vi(
     random.seed(seed)
 
     # Setup output directory
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(tz=ZoneInfo("Asia/Ho_Chi_Minh")).strftime("%Y%m%d_%H%M%S")
     run_dir = Path(output_dir) / f"vi_{timestamp}"
     run_dir.mkdir(parents=True, exist_ok=True)
     log_path = run_dir / "run.log"
