@@ -31,6 +31,13 @@ BENCHMARKS = {
         "expected_fields": ["question", "answer", "choices", "id"],
         "description": "Vietnamese MMLU — multi-domain knowledge",
     },
+    "vnhsge": {
+        "hf_path": "roshansk23/Vietnam_HighSchool_Exam_Dataset",
+        "hf_name": None,
+        "split": "train",
+        "expected_fields": ["question", "options", "answer"],
+        "description": "VNHSGE - Vietnamese High School Exam Dataset",
+    }
 }
 
 

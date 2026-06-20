@@ -124,8 +124,16 @@ def format_question(sample: dict, cfg: BenchmarkSpec) -> str:
 def extract_answer(text: str) -> str:
     """
     Trích xuất đáp án cuối từ generated text.
-    Tìm boxed{} hoặc 'Final Answer: ...' pattern.
+    Hỗ trợ: \boxed{}, <answer>...</answer>, Final Answer:, last-line fallback.
     """
+    if not text:
+        return ""
+
+    # GreenMind / VietCoMath style: <answer>42</answer>
+    answer_tag = re.findall(r"<answer>(.*?)</answer>", text, re.S | re.I)
+    if answer_tag:
+        return answer_tag[-1].strip()
+
     # LaTeX boxed answer: \boxed{42}
     boxed = re.findall(r"\\boxed\{([^}]+)\}", text)
     if boxed:

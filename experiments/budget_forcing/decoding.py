@@ -21,6 +21,7 @@ from transformers import PreTrainedTokenizer, PreTrainedModel
 DEFAULT_EOT_STRINGS = [
     "<|im_end|>",
     "</think>",
+    "</answer>",       # GreenMind-14B-R1 và một số Vietnamese reasoning models
     "####",            # Thường dùng trong GSM8K/DeepSeek
     "\n\nFinal Answer:",
     "\n\nAnswer:",
@@ -224,7 +225,7 @@ class BudgetForcingDecoder:
         if isinstance(text, list):
             text = "".join(text)
         
-        delimiters = ["</think>", FINAL_ANSWER_PREFIX, "\n\nAnswer:", "####"]
+        delimiters = ["</think>", "</answer>", FINAL_ANSWER_PREFIX, "\n\nAnswer:", "####"]
         for delimiter in delimiters:
             if delimiter in text:
                 parts = text.split(delimiter, 1)
