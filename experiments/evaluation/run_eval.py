@@ -65,6 +65,15 @@ BENCHMARK_REGISTRY: dict[str, BenchmarkSpec] = {
         choices_key="choices",
         n_total=744,
     ),
+    "vnhsge": BenchmarkSpec(
+        hf_path="roshansk23/Vietnam_HighSchool_Exam_Dataset",
+        hf_name=None,
+        hf_split="train",
+        question_key="question",
+        answer_key="answer",
+        choices_key="options",  # flat list WITHOUT letter prefixes — added by format_question
+        n_total=6663,           # train split size (answer is 1-indexed: "1"→A, "2"→B, ...)
+    ),
 }
 
 
@@ -104,9 +113,17 @@ def format_question(sample: dict, cfg: BenchmarkSpec) -> str:
 
     choices = sample.get(cfg.choices_key)
 
-    # VMLU flat list: ["A. text", "B. text", ...] — items already include letter prefix
+    # Flat list of choices — may or may not have letter prefixes
     if isinstance(choices, list) and choices:
-        return f"{question}\n\nOptions:\n" + "\n".join(str(c) for c in choices)
+        first = str(choices[0])
+        if re.match(r'^[A-E]\.?\s', first):
+            # Already prefixed: ["A. text", "B. text", ...] (VMLU style)
+            return f"{question}\n\nOptions:\n" + "\n".join(str(c) for c in choices)
+        else:
+            # No prefixes: ["text1", "text2", ...] (VNHSGE style) — add A/B/C/D
+            letters = "ABCDE"
+            option_lines = [f"{letters[i]}. {c}" for i, c in enumerate(choices)]
+            return f"{question}\n\nOptions:\n" + "\n".join(option_lines)
 
     # ARC-Challenge / other dict format: {"label": [...], "text": [...]}
     if isinstance(choices, dict):
@@ -201,10 +218,17 @@ def check_answer(predicted: str, ground_truth: str) -> bool:
     if p_norm == g_norm:
         return True
 
-    # Multiple-choice tolerant comparison (e.g., ARC-Challenge answerKey = A/B/C/D)
+    # Multiple-choice: letter answer (e.g., ARC-Challenge answerKey = A/B/C/D)
     if len(g_norm) == 1 and g_norm in {"a", "b", "c", "d", "e"}:
         pred_choice = _extract_choice_letter(predicted)
         if pred_choice and pred_choice.lower() == g_norm:
+            return True
+
+    # Multiple-choice: 1-indexed numeric answer (e.g., VNHSGE: "1"→A, "2"→B, ...)
+    if len(g_norm) == 1 and g_norm in {"1", "2", "3", "4", "5"}:
+        letter = chr(ord("a") + int(g_norm) - 1)
+        pred_choice = _extract_choice_letter(predicted)
+        if pred_choice and pred_choice.lower() == letter:
             return True
 
     p_nums = _numeric_candidates(predicted)
