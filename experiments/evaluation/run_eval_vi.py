@@ -120,6 +120,7 @@ def run_bf(
     trigger: str,
     model_name: str,
     benchmark: str,
+    max_thinking_tokens: int | None = None,
 ) -> dict:
     """
     Run BF evaluation for one n_wait value.
@@ -151,6 +152,7 @@ def run_bf(
                 max_new_tokens=max_new_tokens,
                 n_wait=n_wait,
                 trigger=trigger,
+                max_thinking_tokens=max_thinking_tokens,
             )
             elapsed = time.time() - t0
 
@@ -234,6 +236,7 @@ def run_evaluation_vi(
     trigger: str = VIETNAMESE_THINK_TRIGGER,
     load_in_4bit: bool = True,
     max_new_tokens: int = 2048,
+    max_thinking_tokens: int | None = None,
     seed: int = 42,
 ) -> List[dict]:
     """
@@ -259,7 +262,7 @@ def run_evaluation_vi(
     log(f"[run_eval_vi] Started at {timestamp}")
     log(f"  model={model_name}, benchmark={benchmark}")
     log(f"  n_wait_list={n_wait_list}, n_samples={n_samples}")
-    log(f"  trigger='{trigger}', load_in_4bit={load_in_4bit}, max_new_tokens={max_new_tokens}")
+    log(f"  trigger='{trigger}', load_in_4bit={load_in_4bit}, max_new_tokens={max_new_tokens}, max_thinking_tokens={max_thinking_tokens}")
 
     # Load benchmark
     from datasets import load_dataset
@@ -312,6 +315,7 @@ def run_evaluation_vi(
                 trigger=trigger,
                 model_name=model_name,
                 benchmark=benchmark,
+                max_thinking_tokens=max_thinking_tokens,
             )
         except Exception as e:
             log(f"[FAIL] n_wait={nw}: {e}")
@@ -413,6 +417,17 @@ if __name__ == "__main__":
         default=2048,
         help="Max new tokens to generate per question (default: 2048)",
     )
+    parser.add_argument(
+        "--max_thinking_tokens",
+        type=int,
+        default=None,
+        help=(
+            "Cap thinking phase at N tokens then inject 'Final Answer:' (enforce_maximum). "
+            "Recommended: 400 for non-reasoning Vi models (vinallama, vistral, seallm) "
+            "to prevent runaway generation after trigger injection. "
+            "Leave unset for reasoning models (r1-distill, greenmind)."
+        ),
+    )
     parser.add_argument("--seed", type=int, default=42)
 
     args = parser.parse_args()
@@ -426,5 +441,6 @@ if __name__ == "__main__":
         trigger=args.trigger,
         load_in_4bit=not args.no_4bit,
         max_new_tokens=args.max_tokens,
+        max_thinking_tokens=args.max_thinking_tokens,
         seed=args.seed,
     )

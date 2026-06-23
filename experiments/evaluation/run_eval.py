@@ -140,30 +140,50 @@ def format_question(sample: dict, cfg: BenchmarkSpec) -> str:
 
 def extract_answer(text: str) -> str:
     """
-    Trích xuất đáp án cuối từ generated text.
-    Hỗ trợ: \boxed{}, <answer>...</answer>, Final Answer:, last-line fallback.
+    Trích xuất đáp án từ generated text.
+    Hỗ trợ: <answer>...</answer>, \\boxed{}, Final Answer:, và smart last-line fallback.
+
+    Design decisions:
+    - <answer> / \\boxed{}: use LAST match — reasoning models commit at end of trace.
+    - "Final Answer:": use FIRST match — BF injects this exactly once; later repetitions
+      are model rambling after trigger injection.
+    - Last-line fallback: scan lines from end for a clean A/B/C/D or short number
+      before returning raw last line — avoids returning trigger noise or apology text
+      from non-reasoning models that continue past their answer.
     """
     if not text:
         return ""
 
-    # GreenMind / VietCoMath style: <answer>42</answer>
+    # GreenMind / VietCoMath: <answer>42</answer> — last tag is committed answer
     answer_tag = re.findall(r"<answer>(.*?)</answer>", text, re.S | re.I)
     if answer_tag:
         return answer_tag[-1].strip()
 
-    # LaTeX boxed answer: \boxed{42}
+    # LaTeX boxed: \boxed{42} — last box is final answer in reasoning traces
     boxed = re.findall(r"\\boxed\{([^}]+)\}", text)
     if boxed:
         return boxed[-1].strip()
 
-    # "Final Answer: 42" hoặc "The answer is 42"
+    # "Final Answer: ..." — FIRST occurrence is canonical.
+    # BF enforce_maximum injects this prefix exactly once; if model repeats it after
+    # trigger injection the first occurrence is the one we want.
     fa = re.findall(r"(?:Final Answer|The answer is)[:\s]+(.+?)(?:\n|$)", text, re.I)
     if fa:
-        return fa[-1].strip()
+        return fa[0].strip()
 
-    # Fallback: lấy dòng cuối không rỗng
+    # Smart last-line fallback: scan lines from end for a clean answer before
+    # returning raw last line (prevents returning trigger noise / apology text).
     lines = [line.strip() for line in text.strip().split("\n") if line.strip()]
-    return lines[-1] if lines else ""
+    if lines:
+        for line in reversed(lines):
+            # Standalone letter: "A" or "A. text" or "A) text"
+            if re.fullmatch(r'[A-E]', line) or re.match(r'^[A-E][\.\)\s]', line):
+                return line
+            # Short pure number (handles "42", "3.14", "-5")
+            if re.fullmatch(r'[-+]?\d+(\.\d+)?', line.replace(',', '')):
+                return line
+        return lines[-1]
+    return ""
 
 
 def _numeric_candidates(text: str) -> list[float]:
