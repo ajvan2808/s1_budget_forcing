@@ -81,7 +81,8 @@ def load_model_and_tokenizer(
         device_map=device_map,
         trust_remote_code=True,
         cache_dir=cache_dir,
-        dtype=torch.bfloat16 if not load_in_4bit else None,
+        torch_dtype=torch.bfloat16 if not load_in_4bit else None,
+        low_cpu_mem_usage=True,  # load shards directly to GPU — reduces peak VRAM spike on large models
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
