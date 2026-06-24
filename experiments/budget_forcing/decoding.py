@@ -6,6 +6,8 @@ Hai chế độ:
   - enforce_maximum: Khi token count > budget → chèn EoT + "Final Answer:"
   - enforce_minimum: Khi model sinh EoT → suppress, append trigger phrase
 
+Hỗ trợ: GPU (CUDA/MPS) + TPU (torch_xla)
+
 Tham khảo: Section 3.1 của paper.
 """
 
@@ -13,6 +15,14 @@ from __future__ import annotations
 from typing import Optional
 import torch
 from transformers import PreTrainedTokenizer, PreTrainedModel
+
+# TPU detection (optional)
+try:
+    import torch_xla
+    import torch_xla.core.xla_model as xm
+    HAS_TPU = True
+except ImportError:
+    HAS_TPU = False
 
 
 # ── Constants ──────────────────────────────────────────────────────────────────
@@ -59,11 +69,27 @@ class BudgetForcingDecoder:
     ):
         self.model = model
         self.tokenizer = tokenizer
-        self.device = device or (
-            "cuda" if torch.cuda.is_available()
-            else "mps" if torch.backends.mps.is_available()
-            else "cpu"
-        )
+        
+        # Auto-detect device if not provided
+        if device is None:
+            if HAS_TPU:
+                try:
+                    xm.get_ordinal()
+                    device = "xla"
+                except Exception:
+                    pass
+            
+            if device is None:
+                device = (
+                    "cuda" if torch.cuda.is_available()
+                    else "mps" if torch.backends.mps.is_available()
+                    else "cpu"
+                )
+        
+        self.device = device
+        self.is_tpu = device == "xla"
+        print(f"[BudgetForcingDecoder] Using device: {device}")
+        
         self.eot_strings = eot_strings or DEFAULT_EOT_STRINGS
 
         # Pre-encode EoT tokens for fast lookup
@@ -204,6 +230,10 @@ class BudgetForcingDecoder:
                 )
                 past_key_values = step_out.past_key_values
                 logits = step_out.logits[:, -1, :]
+        
+        # TPU synchronization (no-op on GPU/CPU)
+        if self.is_tpu:
+            xm.mark_step()
 
         # ── Decode kết quả ────────────────────────────────────────────────────
         full_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=False)
