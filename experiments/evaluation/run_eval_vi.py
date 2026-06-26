@@ -145,7 +145,7 @@ def run_bf(
         t0 = time.time()
         error_msg = None
         answer_text_saved = ""
-        full_text_snippet = ""
+        thinking_text_saved = ""
         try:
             output = decoder.generate(
                 input_ids,
@@ -159,8 +159,12 @@ def run_bf(
             answer_text = output.get("answer_text", "")
             thinking_text = output.get("thinking_text", "")
             full_text = output.get("full_text", "")
-            answer_text_saved = answer_text[:300]
-            full_text_snippet = full_text[:300]
+            # Store full traces for reasoning analysis (self-correction detection,
+            # trace quality inspection). thinking_text captures the reasoning trace;
+            # answer_text captures everything after </think> or the full output for
+            # non-reasoning models that have no thinking delimiter.
+            answer_text_saved = answer_text
+            thinking_text_saved = thinking_text or full_text  # fallback for non-reasoning models
 
             # Primary: extract from answer_text (after </think> or Final Answer:)
             predicted = extract_answer(answer_text)
@@ -203,8 +207,8 @@ def run_bf(
             "predicted": predicted,
             "correct": is_correct,
             "thinking_tokens": thinking_tokens,
-            "answer_text": answer_text_saved,   # first 300 chars — for debugging
-            "full_text": full_text_snippet,      # first 300 chars — for debugging
+            "answer_text": answer_text_saved,     # full answer section (after </think>)
+            "thinking_text": thinking_text_saved, # full reasoning trace (inside <think>)
             "elapsed_sec": round(elapsed, 2),
             "error": error_msg,
         })
