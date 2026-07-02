@@ -1,0 +1,4 @@
+model,benchmark,language,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+vinallama-7b,vnhsge,vi,0,100,0.28,-0.025,0.28,133.0,0,True,False,experiments/results/vi_20260621_213936,20260621_213936
+vinallama-7b,vnhsge,vi,1,100,0.25,-0.025,0.28,335.8,0,True,False,experiments/results/vi_20260621_213936,20260621_213936
+vinallama-7b,vnhsge,vi,2,100,0.23,-0.025,0.28,607.2,0,True,False,experiments/results/vi_20260621_213936,20260621_213936

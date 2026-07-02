@@ -1,0 +1,4 @@
+model,benchmark,language,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+r1-distill-7B,vnhsge,vi,0,100,0.22,0.015,0.25,540.9,0,True,False,experiments/results/vi_20260627_235634,20260627_235634
+r1-distill-7B,vnhsge,vi,1,100,0.21,0.015,0.25,676.3,0,True,False,experiments/results/vi_20260627_235634,20260627_235634
+r1-distill-7B,vnhsge,vi,2,100,0.25,0.015,0.25,801.0,0,True,False,experiments/results/vi_20260627_235634,20260627_235634

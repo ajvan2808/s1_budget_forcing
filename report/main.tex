@@ -1,48 +1,54 @@
-\documentclass[preprint,12pt]{elsarticle}
+\documentclass[10pt,a4paper,twocolumn]{article}
 
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
+\usepackage[utf8]{vietnam}
+\usepackage{times}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{multirow}
+\usepackage{array}
 \usepackage{url}
-\usepackage{hyperref}
+\usepackage[hyphens]{xurl}
 \usepackage{enumitem}
 \usepackage{float}
-\usepackage{natbib}
+\usepackage{balance}
+\usepackage[a4paper,left=0.75in,right=0.75in,top=0.75in,bottom=1in,columnsep=0.25in]{geometry}
+\usepackage[authoryear,round]{natbib}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
 
-\journal{Computers and Education: Artificial Intelligence}
+\setlist{leftmargin=*,nosep}
+\emergencystretch=1em
+\AtBeginDocument{%
+  \renewcommand{\abstractname}{Abstract}%
+  \renewcommand{\tablename}{Table}%
+  \renewcommand{\figurename}{Figure}%
+  \renewcommand{\refname}{References}%
+}
+
+\title{Does Test-Time Scaling via Budget Forcing Transfer to Vietnamese Reasoning?}
+
+\author{Van Hong Hanh \quad Phan Hong Hanh\\
+University of Technology, Ho Chi Minh City, Vietnam}
+\date{}
 
 \begin{document}
 
-\begin{frontmatter}
-
-\title{Analyzing Generalizability and Optimizing Budget Forcing for Test-time Scaling across Open-source LLMs}
-
-\author[inst1]{Van Hong Hanh}
-\author[inst1]{Phan Hong Hanh}
-\address[inst1]{University of Technology, Ho Chi Minh City, Vietnam}
+\maketitle
 
 \begin{abstract}
-This report studies budget forcing from \citet{muennighoff2025s1} as a simple test-time scaling mechanism for reasoning-oriented language models. The project reproduces the core decoding intervention implemented in this repository, evaluates it on mathematical reasoning benchmarks, and analyzes whether increasing the allowed thinking budget improves downstream accuracy under constrained resources. In parallel with the reproduction effort, the report situates budget forcing within the broader landscape of inference-time enhancement methods, including retrieval augmentation and reasoning-oriented post-training. The current artifact is structured to support a narrow and reproducible reproduction: one primary benchmark, one main model configuration, a small sweep over \texttt{n\_wait}, and a trigger-phrase ablation. Final result paragraphs, tables, and figures are designed to be filled directly from the JSON outputs produced by the experiment pipeline.
+Test-time scaling improves language-model reasoning by allocating additional computation during inference rather than only during training. This report reviews \citet{muennighoff2025s1}, which combines a compact reasoning dataset with budget forcing, and then studies whether the budget-forcing component transfers to Vietnamese-language reasoning. We adapt the decoding trigger to Vietnamese, sweep \texttt{n\_wait} $\in \{0,1,2\}$, and evaluate reasoning-distilled, Vietnamese-specialized, and Southeast Asian open models on Vietnamese math, factual multiple-choice, and exploratory high-school exam benchmarks. The study separates mechanical control over thinking length from useful accuracy gains, asking whether extra generated reasoning actually improves answers under realistic compute constraints.
 \end{abstract}
 
-\begin{keyword}
-test-time scaling \sep budget forcing \sep reasoning language models \sep reproduction study \sep mathematical reasoning
-\end{keyword}
+\input{sections/01_introduction}
+\input{sections/02_method}
+\input{sections/03_metrics}
+\input{sections/04_analysis}
+\input{sections/05_related_work}
+\input{sections/06_experiments}
+\input{sections/07_conclusion}
 
-\end{frontmatter}
-
-\input{report/sections/01_introduction}
-\input{report/sections/02_method}
-\input{report/sections/03_metrics}
-\input{report/sections/04_analysis}
-\input{report/sections/05_related_work}
-\input{report/sections/06_experiments}
-\input{report/sections/07_conclusion}
-
-\bibliographystyle{apalike}
-\bibliography{report/references}
+\balance
+\bibliographystyle{plainnat}
+\bibliography{references}
 
 \end{document}

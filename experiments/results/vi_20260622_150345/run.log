@@ -1,0 +1,21 @@
+[run_eval_vi] Started at 20260622_150345
+  model=seallm-7b, benchmark=vimmlu
+  n_wait_list=[0, 1, 2], n_samples=100
+  trigger='Chờ một chút', load_in_4bit=True, max_new_tokens=2048
+[run_eval_vi] Loading benchmark: tridm/VMLU
+[run_eval_vi] Sampled 100 questions (seed=42)
+[run_eval_vi] Loading model: seallm-7b
+
+--- n_wait=0 ---
+  accuracy=0.46, correct=46/100, extraction_failures=0
+  Saved: experiments/results/vi_20260622_150345/seallm-7b__vimmlu__nwait0.json
+
+--- n_wait=1 ---
+  accuracy=0.52, correct=52/100, extraction_failures=0
+  Saved: experiments/results/vi_20260622_150345/seallm-7b__vimmlu__nwait1.json
+
+--- n_wait=2 ---
+  accuracy=0.56, correct=56/100, extraction_failures=0
+  Saved: experiments/results/vi_20260622_150345/seallm-7b__vimmlu__nwait2.json
+
+[run_eval_vi] Sweep done. Results in: experiments/results/vi_20260622_150345

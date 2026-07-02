@@ -1,0 +1,4 @@
+model,benchmark,language,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+greenmind-14b-r1,vi_gsm8k,vi,0,100,0.8,-0.125,0.8,199.4,0,True,False,experiments/results/vi_20260627_100550,20260627_100550
+greenmind-14b-r1,vi_gsm8k,vi,1,100,0.51,-0.125,0.8,145.9,0,True,False,experiments/results/vi_20260627_100550,20260627_100550
+greenmind-14b-r1,vi_gsm8k,vi,2,100,0.55,-0.125,0.8,165.3,0,True,False,experiments/results/vi_20260627_100550,20260627_100550

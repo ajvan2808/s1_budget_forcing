@@ -1,0 +1,4 @@
+model,benchmark,language,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+vistral-7b,vnhsge,vi,0,100,0.48,-0.165,0.48,50.5,0,True,False,experiments/results/vi_20260622_161813,20260622_161813
+vistral-7b,vnhsge,vi,1,100,0.16,-0.165,0.48,158.8,0,True,False,experiments/results/vi_20260622_161813,20260622_161813
+vistral-7b,vnhsge,vi,2,100,0.15,-0.165,0.48,906.8,0,True,False,experiments/results/vi_20260622_161813,20260622_161813

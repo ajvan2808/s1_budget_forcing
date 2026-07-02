@@ -1,0 +1,21 @@
+[run_eval_vi] Started at 20260621_155623
+  model=vinallama-7b, benchmark=vi_gsm8k
+  n_wait_list=[0, 1, 2], n_samples=100
+  trigger='Chờ một chút', load_in_4bit=True, max_new_tokens=2048
+[run_eval_vi] Loading benchmark: hllj/vi_gsm8k
+[run_eval_vi] Sampled 100 questions (seed=42)
+[run_eval_vi] Loading model: vinallama-7b
+
+--- n_wait=0 ---
+  accuracy=0.25, correct=25/100, extraction_failures=0
+  Saved: experiments/results/vi_20260621_155623/vinallama-7b__vi_gsm8k__nwait0.json
+
+--- n_wait=1 ---
+  accuracy=0.2, correct=20/100, extraction_failures=0
+  Saved: experiments/results/vi_20260621_155623/vinallama-7b__vi_gsm8k__nwait1.json
+
+--- n_wait=2 ---
+  accuracy=0.16, correct=16/100, extraction_failures=0
+  Saved: experiments/results/vi_20260621_155623/vinallama-7b__vi_gsm8k__nwait2.json
+
+[run_eval_vi] Sweep done. Results in: experiments/results/vi_20260621_155623

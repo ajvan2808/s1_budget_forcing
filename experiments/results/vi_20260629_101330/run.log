@@ -1,0 +1,21 @@
+[run_eval_vi] Started at 20260629_101330
+  model=greenmind-14b-r1, benchmark=vnhsge
+  n_wait_list=[0, 1, 2], n_samples=100
+  trigger='Chờ một chút', load_in_4bit=False, max_new_tokens=2048, max_thinking_tokens=None
+[run_eval_vi] Loading benchmark: roshansk23/Vietnam_HighSchool_Exam_Dataset
+[run_eval_vi] Sampled 100 questions (seed=42)
+[run_eval_vi] Loading model: greenmind-14b-r1
+
+--- n_wait=0 ---
+  accuracy=0.52, correct=52/100, extraction_failures=0
+  Saved: experiments/results/vi_20260629_101330/greenmind-14b-r1__vnhsge__nwait0.json
+
+--- n_wait=1 ---
+  accuracy=0.47, correct=47/100, extraction_failures=0
+  Saved: experiments/results/vi_20260629_101330/greenmind-14b-r1__vnhsge__nwait1.json
+
+--- n_wait=2 ---
+  accuracy=0.49, correct=49/100, extraction_failures=0
+  Saved: experiments/results/vi_20260629_101330/greenmind-14b-r1__vnhsge__nwait2.json
+
+[run_eval_vi] Sweep done. Results in: experiments/results/vi_20260629_101330
