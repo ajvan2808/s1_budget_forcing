@@ -1,0 +1,4 @@
+model,benchmark,language,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+vinallama-7b,vimmlu,vi,0,100,0.34,-0.065,0.34,189.5,0,True,False,experiments/results/vi_20260621_184747,20260621_184747
+vinallama-7b,vimmlu,vi,1,100,0.19,-0.065,0.34,355.8,0,True,False,experiments/results/vi_20260621_184747,20260621_184747
+vinallama-7b,vimmlu,vi,2,100,0.21,-0.065,0.34,523.5,0,True,False,experiments/results/vi_20260621_184747,20260621_184747

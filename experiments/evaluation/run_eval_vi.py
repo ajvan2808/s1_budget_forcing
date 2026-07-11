@@ -120,6 +120,7 @@ def run_bf(
     trigger: str,
     model_name: str,
     benchmark: str,
+    max_thinking_tokens: int | None = None,
 ) -> dict:
     """
     Run BF evaluation for one n_wait value.
@@ -144,21 +145,26 @@ def run_bf(
         t0 = time.time()
         error_msg = None
         answer_text_saved = ""
-        full_text_snippet = ""
+        thinking_text_saved = ""
         try:
             output = decoder.generate(
                 input_ids,
                 max_new_tokens=max_new_tokens,
                 n_wait=n_wait,
                 trigger=trigger,
+                max_thinking_tokens=max_thinking_tokens,
             )
             elapsed = time.time() - t0
 
             answer_text = output.get("answer_text", "")
             thinking_text = output.get("thinking_text", "")
             full_text = output.get("full_text", "")
-            answer_text_saved = answer_text[:300]
-            full_text_snippet = full_text[:300]
+            # Store full traces for reasoning analysis (self-correction detection,
+            # trace quality inspection). thinking_text captures the reasoning trace;
+            # answer_text captures everything after </think> or the full output for
+            # non-reasoning models that have no thinking delimiter.
+            answer_text_saved = answer_text
+            thinking_text_saved = thinking_text or full_text  # fallback for non-reasoning models
 
             # Primary: extract from answer_text (after </think> or Final Answer:)
             predicted = extract_answer(answer_text)
@@ -201,8 +207,8 @@ def run_bf(
             "predicted": predicted,
             "correct": is_correct,
             "thinking_tokens": thinking_tokens,
-            "answer_text": answer_text_saved,   # first 300 chars — for debugging
-            "full_text": full_text_snippet,      # first 300 chars — for debugging
+            "answer_text": answer_text_saved,     # full answer section (after </think>)
+            "thinking_text": thinking_text_saved, # full reasoning trace (inside <think>)
             "elapsed_sec": round(elapsed, 2),
             "error": error_msg,
         })
@@ -234,6 +240,7 @@ def run_evaluation_vi(
     trigger: str = VIETNAMESE_THINK_TRIGGER,
     load_in_4bit: bool = True,
     max_new_tokens: int = 2048,
+    max_thinking_tokens: int | None = None,
     seed: int = 42,
 ) -> List[dict]:
     """
@@ -259,7 +266,7 @@ def run_evaluation_vi(
     log(f"[run_eval_vi] Started at {timestamp}")
     log(f"  model={model_name}, benchmark={benchmark}")
     log(f"  n_wait_list={n_wait_list}, n_samples={n_samples}")
-    log(f"  trigger='{trigger}', load_in_4bit={load_in_4bit}, max_new_tokens={max_new_tokens}")
+    log(f"  trigger='{trigger}', load_in_4bit={load_in_4bit}, max_new_tokens={max_new_tokens}, max_thinking_tokens={max_thinking_tokens}")
 
     # Load benchmark
     from datasets import load_dataset
@@ -312,6 +319,7 @@ def run_evaluation_vi(
                 trigger=trigger,
                 model_name=model_name,
                 benchmark=benchmark,
+                max_thinking_tokens=max_thinking_tokens,
             )
         except Exception as e:
             log(f"[FAIL] n_wait={nw}: {e}")
@@ -413,6 +421,17 @@ if __name__ == "__main__":
         default=2048,
         help="Max new tokens to generate per question (default: 2048)",
     )
+    parser.add_argument(
+        "--max_thinking_tokens",
+        type=int,
+        default=None,
+        help=(
+            "Cap thinking phase at N tokens then inject 'Final Answer:' (enforce_maximum). "
+            "Recommended: 400 for non-reasoning Vi models (vinallama, vistral, seallm) "
+            "to prevent runaway generation after trigger injection. "
+            "Leave unset for reasoning models (r1-distill, greenmind)."
+        ),
+    )
     parser.add_argument("--seed", type=int, default=42)
 
     args = parser.parse_args()
@@ -426,5 +445,6 @@ if __name__ == "__main__":
         trigger=args.trigger,
         load_in_4bit=not args.no_4bit,
         max_new_tokens=args.max_tokens,
+        max_thinking_tokens=args.max_thinking_tokens,
         seed=args.seed,
     )

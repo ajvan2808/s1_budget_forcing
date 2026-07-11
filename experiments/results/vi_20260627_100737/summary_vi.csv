@@ -1,0 +1,4 @@
+model,benchmark,language,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+r1-distill-7B,vi_gsm8k,vi,0,100,0.53,0.02,0.57,191.0,0,True,False,experiments/results/vi_20260627_100737,20260627_100737
+r1-distill-7B,vi_gsm8k,vi,1,100,0.56,0.02,0.57,329.1,0,True,False,experiments/results/vi_20260627_100737,20260627_100737
+r1-distill-7B,vi_gsm8k,vi,2,100,0.57,0.02,0.57,426.1,0,True,False,experiments/results/vi_20260627_100737,20260627_100737

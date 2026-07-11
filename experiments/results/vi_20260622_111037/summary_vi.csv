@@ -1,0 +1,4 @@
+model,benchmark,language,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+seallm-7b,vi_gsm8k,vi,0,100,0.66,-0.095,0.66,236.2,0,True,False,experiments/results/vi_20260622_111037,20260622_111037
+seallm-7b,vi_gsm8k,vi,1,100,0.5,-0.095,0.66,501.9,0,True,False,experiments/results/vi_20260622_111037,20260622_111037
+seallm-7b,vi_gsm8k,vi,2,100,0.47,-0.095,0.66,734.4,0,True,False,experiments/results/vi_20260622_111037,20260622_111037

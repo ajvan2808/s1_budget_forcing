@@ -65,6 +65,15 @@ BENCHMARK_REGISTRY: dict[str, BenchmarkSpec] = {
         choices_key="choices",
         n_total=744,
     ),
+    "vnhsge": BenchmarkSpec(
+        hf_path="roshansk23/Vietnam_HighSchool_Exam_Dataset",
+        hf_name=None,
+        hf_split="train",
+        question_key="question",
+        answer_key="answer",
+        choices_key="options",  # flat list WITHOUT letter prefixes — added by format_question
+        n_total=6663,           # train split size (answer is 1-indexed: "1"→A, "2"→B, ...)
+    ),
 }
 
 
@@ -104,9 +113,17 @@ def format_question(sample: dict, cfg: BenchmarkSpec) -> str:
 
     choices = sample.get(cfg.choices_key)
 
-    # VMLU flat list: ["A. text", "B. text", ...] — items already include letter prefix
+    # Flat list of choices — may or may not have letter prefixes
     if isinstance(choices, list) and choices:
-        return f"{question}\n\nOptions:\n" + "\n".join(str(c) for c in choices)
+        first = str(choices[0])
+        if re.match(r'^[A-E]\.?\s', first):
+            # Already prefixed: ["A. text", "B. text", ...] (VMLU style)
+            return f"{question}\n\nOptions:\n" + "\n".join(str(c) for c in choices)
+        else:
+            # No prefixes: ["text1", "text2", ...] (VNHSGE style) — add A/B/C/D
+            letters = "ABCDE"
+            option_lines = [f"{letters[i]}. {c}" for i, c in enumerate(choices)]
+            return f"{question}\n\nOptions:\n" + "\n".join(option_lines)
 
     # ARC-Challenge / other dict format: {"label": [...], "text": [...]}
     if isinstance(choices, dict):
@@ -123,22 +140,50 @@ def format_question(sample: dict, cfg: BenchmarkSpec) -> str:
 
 def extract_answer(text: str) -> str:
     """
-    Trích xuất đáp án cuối từ generated text.
-    Tìm boxed{} hoặc 'Final Answer: ...' pattern.
+    Trích xuất đáp án từ generated text.
+    Hỗ trợ: <answer>...</answer>, \\boxed{}, Final Answer:, và smart last-line fallback.
+
+    Design decisions:
+    - <answer> / \\boxed{}: use LAST match — reasoning models commit at end of trace.
+    - "Final Answer:": use FIRST match — BF injects this exactly once; later repetitions
+      are model rambling after trigger injection.
+    - Last-line fallback: scan lines from end for a clean A/B/C/D or short number
+      before returning raw last line — avoids returning trigger noise or apology text
+      from non-reasoning models that continue past their answer.
     """
-    # LaTeX boxed answer: \boxed{42}
+    if not text:
+        return ""
+
+    # GreenMind / VietCoMath: <answer>42</answer> — last tag is committed answer
+    answer_tag = re.findall(r"<answer>(.*?)</answer>", text, re.S | re.I)
+    if answer_tag:
+        return answer_tag[-1].strip()
+
+    # LaTeX boxed: \boxed{42} — last box is final answer in reasoning traces
     boxed = re.findall(r"\\boxed\{([^}]+)\}", text)
     if boxed:
         return boxed[-1].strip()
 
-    # "Final Answer: 42" hoặc "The answer is 42"
+    # "Final Answer: ..." — FIRST occurrence is canonical.
+    # BF enforce_maximum injects this prefix exactly once; if model repeats it after
+    # trigger injection the first occurrence is the one we want.
     fa = re.findall(r"(?:Final Answer|The answer is)[:\s]+(.+?)(?:\n|$)", text, re.I)
     if fa:
-        return fa[-1].strip()
+        return fa[0].strip()
 
-    # Fallback: lấy dòng cuối không rỗng
+    # Smart last-line fallback: scan lines from end for a clean answer before
+    # returning raw last line (prevents returning trigger noise / apology text).
     lines = [line.strip() for line in text.strip().split("\n") if line.strip()]
-    return lines[-1] if lines else ""
+    if lines:
+        for line in reversed(lines):
+            # Standalone letter: "A" or "A. text" or "A) text"
+            if re.fullmatch(r'[A-E]', line) or re.match(r'^[A-E][\.\)\s]', line):
+                return line
+            # Short pure number (handles "42", "3.14", "-5")
+            if re.fullmatch(r'[-+]?\d+(\.\d+)?', line.replace(',', '')):
+                return line
+        return lines[-1]
+    return ""
 
 
 def _numeric_candidates(text: str) -> list[float]:
@@ -193,10 +238,17 @@ def check_answer(predicted: str, ground_truth: str) -> bool:
     if p_norm == g_norm:
         return True
 
-    # Multiple-choice tolerant comparison (e.g., ARC-Challenge answerKey = A/B/C/D)
+    # Multiple-choice: letter answer (e.g., ARC-Challenge answerKey = A/B/C/D)
     if len(g_norm) == 1 and g_norm in {"a", "b", "c", "d", "e"}:
         pred_choice = _extract_choice_letter(predicted)
         if pred_choice and pred_choice.lower() == g_norm:
+            return True
+
+    # Multiple-choice: 1-indexed numeric answer (e.g., VNHSGE: "1"→A, "2"→B, ...)
+    if len(g_norm) == 1 and g_norm in {"1", "2", "3", "4", "5"}:
+        letter = chr(ord("a") + int(g_norm) - 1)
+        pred_choice = _extract_choice_letter(predicted)
+        if pred_choice and pred_choice.lower() == letter:
             return True
 
     p_nums = _numeric_candidates(predicted)
