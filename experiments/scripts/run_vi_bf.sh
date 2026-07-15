@@ -29,6 +29,9 @@
 #   N_WAIT_LIST   Space-separated n_wait values (default: 0 1 2)
 #   N_SAMPLES     Questions per run (default: 100)
 #   OUTPUT_DIR    Root output directory (default: experiments/results)
+#   TRIGGER       BF trigger phrase, e.g. 'Khoan đã' (default: run_eval_vi.py's
+#                 own default). Passed through as a single argv token even
+#                 when it contains spaces — do not fold it into EXTRA_ARGS.
 #   EXTRA_ARGS    Extra args forwarded to run_eval_vi.py (e.g. '--no_4bit')
 #   SEED          Random seed (default: 42)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -41,6 +44,7 @@ BENCHMARKS="${BENCHMARKS:-vi_gsm8k}"
 N_WAIT_LIST="${N_WAIT_LIST:-0 1 2}"
 N_SAMPLES="${N_SAMPLES:-100}"
 OUTPUT_DIR="${OUTPUT_DIR:-experiments/results}"
+TRIGGER="${TRIGGER:-}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 SEED="${SEED:-42}"
 
@@ -66,12 +70,20 @@ echo "  n_wait:     $N_WAIT_LIST"
 echo "  n_samples:  $N_SAMPLES"
 echo "  output_dir: $OUTPUT_DIR"
 echo "  seed:       $SEED"
+[[ -n "$TRIGGER" ]] && echo "  trigger:    $TRIGGER"
 [[ -n "$EXTRA_ARGS" ]] && echo "  extra_args: $EXTRA_ARGS"
 echo "======================================================================"
 echo ""
 
 # Build --n_wait args
 N_WAIT_ARGS="--n_wait $N_WAIT_LIST"
+
+# Build --trigger arg as an array so a multi-word phrase (e.g. "Khoan đã")
+# survives as a single argv token instead of being word-split like EXTRA_ARGS.
+TRIGGER_ARGS=()
+if [[ -n "$TRIGGER" ]]; then
+    TRIGGER_ARGS=(--trigger "$TRIGGER")
+fi
 
 # Use a relative path so spaces in REPO_ROOT don't break the command.
 EVAL_REL="experiments/evaluation/run_eval_vi.py"
@@ -96,6 +108,7 @@ for MODEL in $MODELS; do
             --n_samples "$N_SAMPLES" \
             --output_dir "$OUTPUT_DIR" \
             --seed "$SEED" \
+            "${TRIGGER_ARGS[@]}" \
             $EXTRA_ARGS; then
             echo ""
             echo "  [OK] $MODEL × $BENCHMARK completed."

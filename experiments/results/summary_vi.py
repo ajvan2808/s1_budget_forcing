@@ -7,7 +7,7 @@ computes per-model scaling metrics, and outputs two files:
   summary_vi.md    human-readable markdown table for the report
 
 Column schema:
-  model, benchmark, language, n_wait,
+  model, benchmark, language, trigger, n_wait,
   n_samples, accuracy, scaling, performance,
   avg_thinking_tokens,
   extraction_failures, cuda_available, mps_available,
@@ -117,10 +117,16 @@ def build_rows(records: List[dict]) -> List[Dict[str, Any]]:
         model = rec.get("model", "unknown")
         benchmark = rec.get("benchmark", "unknown")
         condition = rec.get("condition", "unknown")
-        key = (model, benchmark, condition)
+        trigger = rec.get("trigger", "unknown")
+        # trigger is part of the group key: without it, runs of the same
+        # model/benchmark with different BF trigger phrases (e.g. "Khoan đã"
+        # vs "Để tôi kiểm tra lại") would be merged into one scaling-slope
+        # computation, silently mixing accuracy points that belong to
+        # different conditions.
+        key = (model, benchmark, condition, trigger)
         groups[key].append(rec)
 
-    for (model, benchmark, condition), group_recs in groups.items():
+    for (model, benchmark, condition, trigger), group_recs in groups.items():
         # Sort by n_wait for scaling computation
         group_recs = sorted(group_recs, key=lambda r: r.get("n_wait", 0))
         nwaits = [r.get("n_wait", 0) for r in group_recs]
@@ -135,6 +141,7 @@ def build_rows(records: List[dict]) -> List[Dict[str, Any]]:
                 "model": model,
                 "benchmark": benchmark,
                 "language": rec.get("language", "vi"),
+                "trigger": trigger,
                 "n_wait": rec.get("n_wait", 0),
                 "n_samples": rec.get("n_samples", 0),
                 "accuracy": rec.get("accuracy"),
@@ -154,7 +161,7 @@ def build_rows(records: List[dict]) -> List[Dict[str, Any]]:
 # ── Output writers ────────────────────────────────────────────────────────────
 
 COLUMNS = [
-    "model", "benchmark", "language", "n_wait",
+    "model", "benchmark", "language", "trigger", "n_wait",
     "n_samples", "accuracy", "scaling", "performance",
     "avg_thinking_tokens",
     "extraction_failures", "cuda_available", "mps_available",
@@ -181,13 +188,13 @@ def write_markdown(rows: List[dict], out_path: Path):
     lines = ["# Vietnamese Budget Forcing Results\n"]
     lines.append(f"Generated: {__import__('datetime').datetime.utcnow().isoformat(timespec='seconds')}Z\n")
 
-    display_cols = ["model", "n_wait", "n_samples",
+    display_cols = ["model", "trigger", "n_wait", "n_samples",
                     "accuracy", "scaling", "performance",
                     "avg_thinking_tokens", "extraction_failures"]
 
     for bench, bench_rows in sorted(by_benchmark.items()):
         lines.append(f"\n## {bench}\n")
-        bench_rows = sorted(bench_rows, key=lambda r: (r["model"], r["n_wait"]))
+        bench_rows = sorted(bench_rows, key=lambda r: (r["model"], r.get("trigger", ""), r["n_wait"]))
 
         # Header
         header = "| " + " | ".join(display_cols) + " |"
@@ -205,6 +212,7 @@ def write_markdown(rows: List[dict], out_path: Path):
 
             cells = [
                 str(row.get("model", "")),
+                str(row.get("trigger", "")),
                 str(row.get("n_wait", "")),
                 str(row.get("n_samples", "")),
                 acc_str,
@@ -233,12 +241,12 @@ def print_summary(rows: List[dict]):
 
     for bench, bench_rows in sorted(by_bench.items()):
         print(f"\n{bench}:")
-        bench_rows = sorted(bench_rows, key=lambda r: (r["model"], r["n_wait"]))
+        bench_rows = sorted(bench_rows, key=lambda r: (r["model"], r.get("trigger", ""), r["n_wait"]))
         for row in bench_rows:
             acc = row.get("accuracy")
             acc_str = f"{acc:.1%}" if acc is not None else "--"
             print(
-                f"  {row['model']:20s} | "
+                f"  {row['model']:20s} | trigger={row.get('trigger', ''):20s} | "
                 f"n_wait={row['n_wait']} | acc={acc_str} | "
                 f"thinks={row.get('avg_thinking_tokens', 0):.0f} tok | "
                 f"fails={row['extraction_failures']}"

@@ -55,7 +55,7 @@ from models.model_loader import load_model_and_tokenizer
 from budget_forcing import BudgetForcingDecoder
 
 # Import registry from run_eval (reuse BenchmarkSpec + answer logic)
-from evaluation.run_eval import (
+from run_eval import (
     BENCHMARK_REGISTRY,
     BenchmarkSpec,
     extract_answer,
@@ -111,16 +111,16 @@ def format_prompt_vi(question: str, tokenizer, think: bool = True) -> str:
 # ── Single n_wait run ─────────────────────────────────────────────────────────
 
 def run_bf(
-    n_wait: int,
-    samples: list,
-    cfg: BenchmarkSpec,
-    model,
-    tokenizer,
-    max_new_tokens: int,
-    trigger: str,
-    model_name: str,
-    benchmark: str,
-    max_thinking_tokens: int | None = None,
+        n_wait: int,
+        samples: list,
+        cfg: BenchmarkSpec,
+        model,
+        tokenizer,
+        max_new_tokens: int,
+        trigger: str,
+        model_name: str,
+        benchmark: str,
+        max_thinking_tokens: int | None = None,
 ) -> dict:
     """
     Run BF evaluation for one n_wait value.
@@ -207,8 +207,8 @@ def run_bf(
             "predicted": predicted,
             "correct": is_correct,
             "thinking_tokens": thinking_tokens,
-            "answer_text": answer_text_saved,     # full answer section (after </think>)
-            "thinking_text": thinking_text_saved, # full reasoning trace (inside <think>)
+            "answer_text": answer_text_saved,  # full answer section (after </think>)
+            "thinking_text": thinking_text_saved,  # full reasoning trace (inside <think>)
             "elapsed_sec": round(elapsed, 2),
             "error": error_msg,
         })
@@ -232,16 +232,16 @@ def run_bf(
 # ── Main evaluation ───────────────────────────────────────────────────────────
 
 def run_evaluation_vi(
-    model_name: str,
-    benchmark: str,
-    n_wait_list: List[int],
-    n_samples: int,
-    output_dir: str,
-    trigger: str = VIETNAMESE_THINK_TRIGGER,
-    load_in_4bit: bool = True,
-    max_new_tokens: int = 2048,
-    max_thinking_tokens: int | None = None,
-    seed: int = 42,
+        model_name: str,
+        benchmark: str,
+        n_wait_list: List[int],
+        n_samples: int,
+        output_dir: str,
+        trigger: str = VIETNAMESE_THINK_TRIGGER,
+        load_in_4bit: bool = True,
+        max_new_tokens: int = 2048,
+        max_thinking_tokens: int | None = None,
+        seed: int = 42,
 ) -> List[dict]:
     """
     Run BF sweep across all n_wait values for one (model, benchmark).
