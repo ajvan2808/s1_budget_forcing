@@ -120,15 +120,30 @@ def load_model_and_tokenizer(
     """
     # Detect device
     device_type = detect_device()
-    
+
     # Resolve model ID
     hf_id = SUPPORTED_MODELS.get(model_name, model_name)
-    
+
     # On TPU, disable quantization and adjust device_map
     if device_type == "xla":
         print(f"Loading: {hf_id} | 4-bit=False (TPU detected, quantization disabled)")
         load_in_4bit = False
         device_map = "sequential"
+    elif device_type == "cuda" and device_map == "auto" and torch.cuda.device_count() > 1:
+        # Every model in SUPPORTED_MODELS fits on a single T4 once quantized to
+        # 4-bit (largest is ~14B ≈ 7GB), so multi-GPU sharding is never needed
+        # here. On multi-GPU sessions (e.g. Kaggle "T4 x2"), device_map="auto"
+        # has been observed to place more weight on GPU 1 than fits, causing an
+        # OOM during from_pretrained's tensor materialization even though the
+        # model as a whole would comfortably fit on GPU 0 alone. Pin to a
+        # single GPU to sidestep the auto-balancer entirely.
+        print(
+            f"[device] {torch.cuda.device_count()} GPUs visible — pinning to "
+            f"cuda:0 instead of device_map='auto' (model fits on one GPU; "
+            f"auto-sharding across GPUs has caused spurious OOM on GPU 1)"
+        )
+        device_map = {"": 0}
+        print(f"Loading: {hf_id} | 4-bit={load_in_4bit} | device={device_type}")
     else:
         print(f"Loading: {hf_id} | 4-bit={load_in_4bit} | device={device_type}")
 
