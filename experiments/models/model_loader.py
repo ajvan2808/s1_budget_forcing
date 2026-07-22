@@ -124,25 +124,46 @@ def load_model_and_tokenizer(
     # Resolve model ID
     hf_id = SUPPORTED_MODELS.get(model_name, model_name)
 
+    max_memory = None
+
     # On TPU, disable quantization and adjust device_map
     if device_type == "xla":
         print(f"Loading: {hf_id} | 4-bit=False (TPU detected, quantization disabled)")
         load_in_4bit = False
         device_map = "sequential"
-    elif device_type == "cuda" and device_map == "auto" and torch.cuda.device_count() > 1:
-        # Every model in SUPPORTED_MODELS fits on a single T4 once quantized to
-        # 4-bit (largest is ~14B ≈ 7GB), so multi-GPU sharding is never needed
-        # here. On multi-GPU sessions (e.g. Kaggle "T4 x2"), device_map="auto"
-        # has been observed to place more weight on GPU 1 than fits, causing an
-        # OOM during from_pretrained's tensor materialization even though the
-        # model as a whole would comfortably fit on GPU 0 alone. Pin to a
-        # single GPU to sidestep the auto-balancer entirely.
+    elif device_type == "cuda" and device_map == "auto":
+        # Two separate GPU-memory problems observed on Kaggle T4s, both fixed
+        # via an explicit `max_memory` map instead of the plain "auto" default:
+        #
+        # 1. Multi-GPU sessions (e.g. "T4 x2"): device_map="auto" has been
+        #    observed to place more weight on GPU 1 than fits, OOMing during
+        #    tensor materialization even though the model fits on ONE GPU.
+        #    Fix: only list GPU 0 in max_memory so accelerate can't place
+        #    anything on a second GPU.
+        #
+        # 2. Even on a single GPU, transformers' newer threaded tensor
+        #    materialization path (core_model_loading.py) has a transient
+        #    peak noticeably above the model's final quantized footprint —
+        #    e.g. greenmind-14b-r1 (~7GB at 4-bit) OOMs a 14.56GB T4 during
+        #    *loading* (needs ~14.4-14.6GB transiently), even though 7GB would
+        #    leave plenty of room once loaded. Fix: cap GPU 0 a couple GB
+        #    below its physical limit and allow CPU as overflow, so
+        #    accelerate offloads a few layers to system RAM during the load
+        #    spike instead of crashing (small speed cost, no crash). This is
+        #    a no-op for smaller models (vistral/vinallama, ~3.5GB) that
+        #    never get close to the cap.
+        gpu_total_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
+        gpu_cap_gb = max(gpu_total_gb - 2.5, 1.0)
+        max_memory = {0: f"{gpu_cap_gb:.1f}GiB", "cpu": "48GiB"}
+        if torch.cuda.device_count() > 1:
+            print(
+                f"[device] {torch.cuda.device_count()} GPUs visible — restricting to cuda:0 only "
+                f"(auto-sharding across GPUs has caused spurious OOM on GPU 1)"
+            )
         print(
-            f"[device] {torch.cuda.device_count()} GPUs visible — pinning to "
-            f"cuda:0 instead of device_map='auto' (model fits on one GPU; "
-            f"auto-sharding across GPUs has caused spurious OOM on GPU 1)"
+            f"[device] capping cuda:0 at {gpu_cap_gb:.1f}GiB (of {gpu_total_gb:.1f}GiB total) + "
+            f"CPU overflow, to absorb the load-time memory spike seen with large 4-bit models"
         )
-        device_map = {"": 0}
         print(f"Loading: {hf_id} | 4-bit={load_in_4bit} | device={device_type}")
     else:
         print(f"Loading: {hf_id} | 4-bit={load_in_4bit} | device={device_type}")
@@ -153,6 +174,7 @@ def load_model_and_tokenizer(
         hf_id,
         quantization_config=bnb_config,
         device_map=device_map,
+        max_memory=max_memory,
         trust_remote_code=True,
         cache_dir=cache_dir,
         torch_dtype=torch.bfloat16 if not load_in_4bit else None,
