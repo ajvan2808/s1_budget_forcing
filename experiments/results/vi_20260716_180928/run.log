@@ -1,0 +1,21 @@
+[run_eval_vi] Started at 20260716_180928
+  model=vinallama-7b, benchmark=vimmlu
+  n_wait_list=[0, 1, 2], n_samples=100
+  trigger='Không, chờ đã', load_in_4bit=True, max_new_tokens=2048, max_thinking_tokens=400
+[run_eval_vi] Loading benchmark: tridm/VMLU
+[run_eval_vi] Sampled 100 questions (seed=42)
+[run_eval_vi] Loading model: vinallama-7b
+
+--- n_wait=0 ---
+  accuracy=0.43, correct=43/100, extraction_failures=0
+  Saved: experiments/results/vi_20260716_180928/vinallama-7b__vimmlu__nwait0.json
+
+--- n_wait=1 ---
+  accuracy=0.24, correct=24/100, extraction_failures=0
+  Saved: experiments/results/vi_20260716_180928/vinallama-7b__vimmlu__nwait1.json
+
+--- n_wait=2 ---
+  accuracy=0.26, correct=26/100, extraction_failures=0
+  Saved: experiments/results/vi_20260716_180928/vinallama-7b__vimmlu__nwait2.json
+
+[run_eval_vi] Sweep done. Results in: experiments/results/vi_20260716_180928

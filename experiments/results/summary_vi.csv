@@ -1,46 +1,109 @@
-model,benchmark,language,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
-vinallama-7b,vi_gsm8k,vi,0,100,0.25,-0.045,0.25,189.2,0,True,False,experiments/results/vi_20260621_155623,20260621_155623
-vinallama-7b,vi_gsm8k,vi,1,100,0.2,-0.045,0.25,344.4,0,True,False,experiments/results/vi_20260621_155623,20260621_155623
-vinallama-7b,vi_gsm8k,vi,2,100,0.16,-0.045,0.25,538.0,0,True,False,experiments/results/vi_20260621_155623,20260621_155623
-vinallama-7b,vimmlu,vi,0,100,0.34,-0.065,0.34,189.5,0,True,False,experiments/results/vi_20260621_184747,20260621_184747
-vinallama-7b,vimmlu,vi,1,100,0.19,-0.065,0.34,355.8,0,True,False,experiments/results/vi_20260621_184747,20260621_184747
-vinallama-7b,vimmlu,vi,2,100,0.21,-0.065,0.34,523.5,0,True,False,experiments/results/vi_20260621_184747,20260621_184747
-vinallama-7b,vnhsge,vi,0,100,0.28,-0.025,0.28,133.0,0,True,False,experiments/results/vi_20260621_213936,20260621_213936
-vinallama-7b,vnhsge,vi,1,100,0.25,-0.025,0.28,335.8,0,True,False,experiments/results/vi_20260621_213936,20260621_213936
-vinallama-7b,vnhsge,vi,2,100,0.23,-0.025,0.28,607.2,0,True,False,experiments/results/vi_20260621_213936,20260621_213936
-seallm-7b,vi_gsm8k,vi,0,100,0.66,-0.095,0.66,236.2,0,True,False,experiments/results/vi_20260622_111037,20260622_111037
-seallm-7b,vi_gsm8k,vi,1,100,0.5,-0.095,0.66,501.9,0,True,False,experiments/results/vi_20260622_111037,20260622_111037
-seallm-7b,vi_gsm8k,vi,2,100,0.47,-0.095,0.66,734.4,0,True,False,experiments/results/vi_20260622_111037,20260622_111037
-vistral-7b,vi_gsm8k,vi,0,100,0.56,-0.025,0.56,229.2,0,True,False,experiments/results/vi_20260622_111045,20260622_111045
-vistral-7b,vi_gsm8k,vi,1,100,0.51,-0.025,0.56,268.9,0,True,False,experiments/results/vi_20260622_111045,20260622_111045
-vistral-7b,vi_gsm8k,vi,2,100,0.51,-0.025,0.56,323.8,0,True,False,experiments/results/vi_20260622_111045,20260622_111045
-vistral-7b,vimmlu,vi,0,100,0.39,-0.13,0.39,130.2,0,True,False,experiments/results/vi_20260622_132808,20260622_132808
-vistral-7b,vimmlu,vi,1,100,0.13,-0.13,0.39,208.7,0,True,False,experiments/results/vi_20260622_132808,20260622_132808
-vistral-7b,vimmlu,vi,2,100,0.13,-0.13,0.39,724.9,0,True,False,experiments/results/vi_20260622_132808,20260622_132808
-seallm-7b,vimmlu,vi,0,100,0.46,0.05,0.56,112.4,0,True,False,experiments/results/vi_20260622_150345,20260622_150345
-seallm-7b,vimmlu,vi,1,100,0.52,0.05,0.56,283.8,0,True,False,experiments/results/vi_20260622_150345,20260622_150345
-seallm-7b,vimmlu,vi,2,100,0.56,0.05,0.56,341.4,0,True,False,experiments/results/vi_20260622_150345,20260622_150345
-vistral-7b,vnhsge,vi,0,100,0.48,-0.165,0.48,50.5,0,True,False,experiments/results/vi_20260622_161813,20260622_161813
-vistral-7b,vnhsge,vi,1,100,0.16,-0.165,0.48,158.8,0,True,False,experiments/results/vi_20260622_161813,20260622_161813
-vistral-7b,vnhsge,vi,2,100,0.15,-0.165,0.48,906.8,0,True,False,experiments/results/vi_20260622_161813,20260622_161813
-seallm-7b,vnhsge,vi,0,100,0.47,0.03,0.53,132.9,0,True,False,experiments/results/vi_20260622_172800,20260622_172800
-seallm-7b,vnhsge,vi,1,100,0.51,0.03,0.53,244.9,0,True,False,experiments/results/vi_20260622_172800,20260622_172800
-seallm-7b,vnhsge,vi,2,100,0.53,0.03,0.53,273.4,0,True,False,experiments/results/vi_20260622_172800,20260622_172800
-greenmind-14b-r1,vi_gsm8k,vi,0,100,0.8,-0.125,0.8,199.4,0,True,False,experiments/results/vi_20260627_100550,20260627_100550
-greenmind-14b-r1,vi_gsm8k,vi,1,100,0.51,-0.125,0.8,145.9,0,True,False,experiments/results/vi_20260627_100550,20260627_100550
-greenmind-14b-r1,vi_gsm8k,vi,2,100,0.55,-0.125,0.8,165.3,0,True,False,experiments/results/vi_20260627_100550,20260627_100550
-r1-distill-7B,vi_gsm8k,vi,0,100,0.53,0.02,0.57,191.0,0,True,False,experiments/results/vi_20260627_100737,20260627_100737
-r1-distill-7B,vi_gsm8k,vi,1,100,0.56,0.02,0.57,329.1,0,True,False,experiments/results/vi_20260627_100737,20260627_100737
-r1-distill-7B,vi_gsm8k,vi,2,100,0.57,0.02,0.57,426.1,0,True,False,experiments/results/vi_20260627_100737,20260627_100737
-r1-distill-7B,vimmlu,vi,0,100,0.27,0.02,0.31,539.8,0,True,False,experiments/results/vi_20260627_142812,20260627_142812
-r1-distill-7B,vimmlu,vi,1,100,0.23,0.02,0.31,741.0,0,True,False,experiments/results/vi_20260627_142812,20260627_142812
-r1-distill-7B,vimmlu,vi,2,100,0.31,0.02,0.31,870.6,0,True,False,experiments/results/vi_20260627_142812,20260627_142812
-r1-distill-7B,vnhsge,vi,0,100,0.22,0.015,0.25,540.9,0,True,False,experiments/results/vi_20260627_235634,20260627_235634
-r1-distill-7B,vnhsge,vi,1,100,0.21,0.015,0.25,676.3,0,True,False,experiments/results/vi_20260627_235634,20260627_235634
-r1-distill-7B,vnhsge,vi,2,100,0.25,0.015,0.25,801.0,0,True,False,experiments/results/vi_20260627_235634,20260627_235634
-greenmind-14b-r1,vimmlu,vi,0,100,0.55,-0.05,0.55,136.5,0,True,False,experiments/results/vi_20260628_001656,20260628_001656
-greenmind-14b-r1,vimmlu,vi,1,100,0.48,-0.05,0.55,159.1,0,True,False,experiments/results/vi_20260628_001656,20260628_001656
-greenmind-14b-r1,vimmlu,vi,2,100,0.45,-0.05,0.55,153.5,0,True,False,experiments/results/vi_20260628_001656,20260628_001656
-greenmind-14b-r1,vnhsge,vi,0,100,0.52,-0.015,0.52,159.1,0,True,False,experiments/results/vi_20260629_101330,20260629_101330
-greenmind-14b-r1,vnhsge,vi,1,100,0.47,-0.015,0.52,159.0,0,True,False,experiments/results/vi_20260629_101330,20260629_101330
-greenmind-14b-r1,vnhsge,vi,2,100,0.49,-0.015,0.52,144.2,0,True,False,experiments/results/vi_20260629_101330,20260629_101330
+model,benchmark,language,trigger,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+vinallama-7b,vi_gsm8k,vi,Chờ một chút,0,100,0.25,-0.045,0.25,189.2,0,True,False,experiments/results/vi_20260621_155623,20260621_155623
+vinallama-7b,vi_gsm8k,vi,Chờ một chút,1,100,0.2,-0.045,0.25,344.4,0,True,False,experiments/results/vi_20260621_155623,20260621_155623
+vinallama-7b,vi_gsm8k,vi,Chờ một chút,2,100,0.16,-0.045,0.25,538.0,0,True,False,experiments/results/vi_20260621_155623,20260621_155623
+vinallama-7b,vimmlu,vi,Chờ một chút,0,100,0.34,-0.065,0.34,189.5,0,True,False,experiments/results/vi_20260621_184747,20260621_184747
+vinallama-7b,vimmlu,vi,Chờ một chút,1,100,0.19,-0.065,0.34,355.8,0,True,False,experiments/results/vi_20260621_184747,20260621_184747
+vinallama-7b,vimmlu,vi,Chờ một chút,2,100,0.21,-0.065,0.34,523.5,0,True,False,experiments/results/vi_20260621_184747,20260621_184747
+vinallama-7b,vnhsge,vi,Chờ một chút,0,100,0.28,-0.025,0.28,133.0,0,True,False,experiments/results/vi_20260621_213936,20260621_213936
+vinallama-7b,vnhsge,vi,Chờ một chút,1,100,0.25,-0.025,0.28,335.8,0,True,False,experiments/results/vi_20260621_213936,20260621_213936
+vinallama-7b,vnhsge,vi,Chờ một chút,2,100,0.23,-0.025,0.28,607.2,0,True,False,experiments/results/vi_20260621_213936,20260621_213936
+vistral-7b,vi_gsm8k,vi,Chờ một chút,0,100,0.56,-0.025,0.56,229.2,0,True,False,experiments/results/vi_20260622_111045,20260622_111045
+vistral-7b,vi_gsm8k,vi,Chờ một chút,1,100,0.51,-0.025,0.56,268.9,0,True,False,experiments/results/vi_20260622_111045,20260622_111045
+vistral-7b,vi_gsm8k,vi,Chờ một chút,2,100,0.51,-0.025,0.56,323.8,0,True,False,experiments/results/vi_20260622_111045,20260622_111045
+vistral-7b,vimmlu,vi,Chờ một chút,0,100,0.39,-0.13,0.39,130.2,0,True,False,experiments/results/vi_20260622_132808,20260622_132808
+vistral-7b,vimmlu,vi,Chờ một chút,1,100,0.13,-0.13,0.39,208.7,0,True,False,experiments/results/vi_20260622_132808,20260622_132808
+vistral-7b,vimmlu,vi,Chờ một chút,2,100,0.13,-0.13,0.39,724.9,0,True,False,experiments/results/vi_20260622_132808,20260622_132808
+vistral-7b,vnhsge,vi,Chờ một chút,0,100,0.48,-0.165,0.48,50.5,0,True,False,experiments/results/vi_20260622_161813,20260622_161813
+vistral-7b,vnhsge,vi,Chờ một chút,1,100,0.16,-0.165,0.48,158.8,0,True,False,experiments/results/vi_20260622_161813,20260622_161813
+vistral-7b,vnhsge,vi,Chờ một chút,2,100,0.15,-0.165,0.48,906.8,0,True,False,experiments/results/vi_20260622_161813,20260622_161813
+greenmind-14b-r1,vi_gsm8k,vi,Chờ một chút,0,100,0.8,-0.125,0.8,199.4,0,True,False,experiments/results/vi_20260627_100550,20260627_100550
+greenmind-14b-r1,vi_gsm8k,vi,Chờ một chút,1,100,0.51,-0.125,0.8,145.9,0,True,False,experiments/results/vi_20260627_100550,20260627_100550
+greenmind-14b-r1,vi_gsm8k,vi,Chờ một chút,2,100,0.55,-0.125,0.8,165.3,0,True,False,experiments/results/vi_20260627_100550,20260627_100550
+greenmind-14b-r1,vimmlu,vi,Chờ một chút,0,100,0.55,-0.05,0.55,136.5,0,True,False,experiments/results/vi_20260628_001656,20260628_001656
+greenmind-14b-r1,vimmlu,vi,Chờ một chút,1,100,0.48,-0.05,0.55,159.1,0,True,False,experiments/results/vi_20260628_001656,20260628_001656
+greenmind-14b-r1,vimmlu,vi,Chờ một chút,2,100,0.45,-0.05,0.55,153.5,0,True,False,experiments/results/vi_20260628_001656,20260628_001656
+greenmind-14b-r1,vnhsge,vi,Chờ một chút,0,100,0.52,-0.015,0.52,159.1,0,True,False,experiments/results/vi_20260629_101330,20260629_101330
+greenmind-14b-r1,vnhsge,vi,Chờ một chút,1,100,0.47,-0.015,0.52,159.0,0,True,False,experiments/results/vi_20260629_101330,20260629_101330
+greenmind-14b-r1,vnhsge,vi,Chờ một chút,2,100,0.49,-0.015,0.52,144.2,0,True,False,experiments/results/vi_20260629_101330,20260629_101330
+vistral-7b,vi_gsm8k,vi,"Không, chờ đã",0,100,0.56,-0.065,0.56,194.5,0,True,False,experiments/results/vi_20260716_092222,20260716_092222
+vistral-7b,vi_gsm8k,vi,"Không, chờ đã",1,100,0.46,-0.065,0.56,298.8,0,True,False,experiments/results/vi_20260716_092222,20260716_092222
+vistral-7b,vi_gsm8k,vi,"Không, chờ đã",2,100,0.43,-0.065,0.56,368.2,0,True,False,experiments/results/vi_20260716_092222,20260716_092222
+vistral-7b,vimmlu,vi,"Không, chờ đã",0,100,0.43,-0.085,0.43,71.0,0,True,False,experiments/results/vi_20260716_115619,20260716_115619
+vistral-7b,vimmlu,vi,"Không, chờ đã",1,100,0.22,-0.085,0.43,200.4,0,True,False,experiments/results/vi_20260716_115619,20260716_115619
+vistral-7b,vimmlu,vi,"Không, chờ đã",2,100,0.26,-0.085,0.43,280.4,0,True,False,experiments/results/vi_20260716_115619,20260716_115619
+vistral-7b,vnhsge,vi,"Không, chờ đã",0,100,0.5,-0.115,0.5,43.9,0,True,False,experiments/results/vi_20260716_133203,20260716_133203
+vistral-7b,vnhsge,vi,"Không, chờ đã",1,100,0.21,-0.115,0.5,185.6,0,True,False,experiments/results/vi_20260716_133203,20260716_133203
+vistral-7b,vnhsge,vi,"Không, chờ đã",2,100,0.27,-0.115,0.5,284.0,0,True,False,experiments/results/vi_20260716_133203,20260716_133203
+vistral-7b,vi_gsm8k,vi,Để tôi kiểm tra lại,0,100,0.56,-0.025,0.56,194.5,0,True,False,experiments/results/vi_20260716_155017,20260716_155017
+vistral-7b,vi_gsm8k,vi,Để tôi kiểm tra lại,1,100,0.51,-0.025,0.56,263.2,0,True,False,experiments/results/vi_20260716_155017,20260716_155017
+vistral-7b,vi_gsm8k,vi,Để tôi kiểm tra lại,2,100,0.51,-0.025,0.56,306.7,0,True,False,experiments/results/vi_20260716_155017,20260716_155017
+vinallama-7b,vi_gsm8k,vi,Khoan đã,0,100,0.25,-0.025,0.25,186.7,0,True,False,experiments/results/vi_20260716_155250,20260716_155250
+vinallama-7b,vi_gsm8k,vi,Khoan đã,1,100,0.19,-0.025,0.25,261.3,0,True,False,experiments/results/vi_20260716_155250,20260716_155250
+vinallama-7b,vi_gsm8k,vi,Khoan đã,2,100,0.2,-0.025,0.25,289.4,0,True,False,experiments/results/vi_20260716_155250,20260716_155250
+vinallama-7b,vi_gsm8k,vi,"Không, chờ đã",0,100,0.25,-0.04,0.25,186.7,0,True,False,experiments/results/vi_20260716_155653,20260716_155653
+vinallama-7b,vi_gsm8k,vi,"Không, chờ đã",1,100,0.2,-0.04,0.25,285.9,0,True,False,experiments/results/vi_20260716_155653,20260716_155653
+vinallama-7b,vi_gsm8k,vi,"Không, chờ đã",2,100,0.17,-0.04,0.25,339.3,0,True,False,experiments/results/vi_20260716_155653,20260716_155653
+vinallama-7b,vimmlu,vi,Khoan đã,0,100,0.43,-0.08,0.43,169.6,0,True,False,experiments/results/vi_20260716_175300,20260716_175300
+vinallama-7b,vimmlu,vi,Khoan đã,1,100,0.25,-0.08,0.43,228.3,0,True,False,experiments/results/vi_20260716_175300,20260716_175300
+vinallama-7b,vimmlu,vi,Khoan đã,2,100,0.27,-0.08,0.43,250.3,0,True,False,experiments/results/vi_20260716_175300,20260716_175300
+vistral-7b,vimmlu,vi,Để tôi kiểm tra lại,0,100,0.43,-0.075,0.43,71.0,0,True,False,experiments/results/vi_20260716_180554,20260716_180554
+vistral-7b,vimmlu,vi,Để tôi kiểm tra lại,1,100,0.26,-0.075,0.43,183.2,0,True,False,experiments/results/vi_20260716_180554,20260716_180554
+vistral-7b,vimmlu,vi,Để tôi kiểm tra lại,2,100,0.28,-0.075,0.43,252.4,0,True,False,experiments/results/vi_20260716_180554,20260716_180554
+vinallama-7b,vimmlu,vi,"Không, chờ đã",0,100,0.43,-0.085,0.43,169.6,0,True,False,experiments/results/vi_20260716_180928,20260716_180928
+vinallama-7b,vimmlu,vi,"Không, chờ đã",1,100,0.24,-0.085,0.43,273.2,0,True,False,experiments/results/vi_20260716_180928,20260716_180928
+vinallama-7b,vimmlu,vi,"Không, chờ đã",2,100,0.26,-0.085,0.43,303.5,0,True,False,experiments/results/vi_20260716_180928,20260716_180928
+vinallama-7b,vi_gsm8k,vi,Để tôi kiểm tra lại,0,100,0.25,-0.035,0.25,186.7,0,True,False,experiments/results/vi_20260716_184109,20260716_184109
+vinallama-7b,vi_gsm8k,vi,Để tôi kiểm tra lại,1,100,0.2,-0.035,0.25,277.2,0,True,False,experiments/results/vi_20260716_184109,20260716_184109
+vinallama-7b,vi_gsm8k,vi,Để tôi kiểm tra lại,2,100,0.18,-0.035,0.25,332.1,0,True,False,experiments/results/vi_20260716_184109,20260716_184109
+vistral-7b,vnhsge,vi,Để tôi kiểm tra lại,0,100,0.5,-0.115,0.5,43.9,0,True,False,experiments/results/vi_20260716_193403,20260716_193403
+vistral-7b,vnhsge,vi,Để tôi kiểm tra lại,1,100,0.22,-0.115,0.5,157.8,0,True,False,experiments/results/vi_20260716_193403,20260716_193403
+vistral-7b,vnhsge,vi,Để tôi kiểm tra lại,2,100,0.27,-0.115,0.5,243.0,0,True,False,experiments/results/vi_20260716_193403,20260716_193403
+vinallama-7b,vnhsge,vi,Khoan đã,0,100,0.39,-0.025,0.39,124.0,0,True,False,experiments/results/vi_20260716_193938,20260716_193938
+vinallama-7b,vnhsge,vi,Khoan đã,1,100,0.34,-0.025,0.39,224.0,0,True,False,experiments/results/vi_20260716_193938,20260716_193938
+vinallama-7b,vnhsge,vi,Khoan đã,2,100,0.34,-0.025,0.39,252.3,0,True,False,experiments/results/vi_20260716_193938,20260716_193938
+vinallama-7b,vnhsge,vi,"Không, chờ đã",0,100,0.39,-0.01,0.39,124.0,0,True,False,experiments/results/vi_20260716_200923,20260716_200923
+vinallama-7b,vnhsge,vi,"Không, chờ đã",1,100,0.35,-0.01,0.39,268.5,0,True,False,experiments/results/vi_20260716_200923,20260716_200923
+vinallama-7b,vnhsge,vi,"Không, chờ đã",2,100,0.37,-0.01,0.39,325.8,0,True,False,experiments/results/vi_20260716_200923,20260716_200923
+vinallama-7b,vimmlu,vi,Để tôi kiểm tra lại,0,100,0.43,-0.07,0.43,169.6,0,True,False,experiments/results/vi_20260716_210939,20260716_210939
+vinallama-7b,vimmlu,vi,Để tôi kiểm tra lại,1,100,0.26,-0.07,0.43,286.9,0,True,False,experiments/results/vi_20260716_210939,20260716_210939
+vinallama-7b,vimmlu,vi,Để tôi kiểm tra lại,2,100,0.29,-0.07,0.43,325.5,0,True,False,experiments/results/vi_20260716_210939,20260716_210939
+vinallama-7b,vnhsge,vi,Để tôi kiểm tra lại,0,100,0.39,-0.04,0.39,124.0,0,True,False,experiments/results/vi_20260716_234220,20260716_234220
+vinallama-7b,vnhsge,vi,Để tôi kiểm tra lại,1,100,0.29,-0.04,0.39,287.6,0,True,False,experiments/results/vi_20260716_234220,20260716_234220
+vinallama-7b,vnhsge,vi,Để tôi kiểm tra lại,2,100,0.31,-0.04,0.39,339.4,0,True,False,experiments/results/vi_20260716_234220,20260716_234220
+vistral-7b,vi_gsm8k,vi,Khoan đã,0,100,0.56,-0.085,0.56,194.5,0,True,False,experiments/results/vi_20260717_111052,20260717_111052
+vistral-7b,vi_gsm8k,vi,Khoan đã,1,100,0.41,-0.085,0.56,298.1,0,True,False,experiments/results/vi_20260717_111052,20260717_111052
+vistral-7b,vi_gsm8k,vi,Khoan đã,2,100,0.39,-0.085,0.56,334.8,0,True,False,experiments/results/vi_20260717_111052,20260717_111052
+vistral-7b,vimmlu,vi,Khoan đã,0,100,0.43,-0.05,0.43,71.0,0,True,False,experiments/results/vi_20260717_133218,20260717_133218
+vistral-7b,vimmlu,vi,Khoan đã,1,100,0.2,-0.05,0.43,202.9,0,True,False,experiments/results/vi_20260717_133218,20260717_133218
+vistral-7b,vimmlu,vi,Khoan đã,2,100,0.33,-0.05,0.43,290.4,0,True,False,experiments/results/vi_20260717_133218,20260717_133218
+vistral-7b,vnhsge,vi,Khoan đã,0,100,0.5,-0.115,0.5,43.9,0,True,False,experiments/results/vi_20260717_150637,20260717_150637
+vistral-7b,vnhsge,vi,Khoan đã,1,100,0.16,-0.115,0.5,194.1,0,True,False,experiments/results/vi_20260717_150637,20260717_150637
+vistral-7b,vnhsge,vi,Khoan đã,2,100,0.27,-0.115,0.5,288.3,0,True,False,experiments/results/vi_20260717_150637,20260717_150637
+greenmind-14b-r1,vi_gsm8k,vi,Khoan đã,0,100,0.77,-0.09,0.77,213.2,0,True,False,experiments/results/vi_20260722_154354,20260722_154354
+greenmind-14b-r1,vi_gsm8k,vi,Khoan đã,1,100,0.58,-0.09,0.77,233.4,0,True,False,experiments/results/vi_20260722_154354,20260722_154354
+greenmind-14b-r1,vi_gsm8k,vi,Khoan đã,2,100,0.59,-0.09,0.77,279.4,0,True,False,experiments/results/vi_20260722_154354,20260722_154354
+greenmind-14b-r1,vimmlu,vi,Khoan đã,0,100,0.57,-0.035,0.57,170.8,0,True,False,experiments/results/vi_20260722_201604,20260722_201604
+greenmind-14b-r1,vimmlu,vi,Khoan đã,1,100,0.55,-0.035,0.57,242.8,0,True,False,experiments/results/vi_20260722_201604,20260722_201604
+greenmind-14b-r1,vimmlu,vi,Khoan đã,2,100,0.5,-0.035,0.57,289.7,0,True,False,experiments/results/vi_20260722_201604,20260722_201604
+greenmind-14b-r1,vnhsge,vi,Khoan đã,0,100,0.57,-0.095,0.57,178.3,0,True,False,experiments/results/vi_20260723_001606,20260723_001606
+greenmind-14b-r1,vnhsge,vi,Khoan đã,1,100,0.38,-0.095,0.57,255.2,0,True,False,experiments/results/vi_20260723_001606,20260723_001606
+greenmind-14b-r1,vnhsge,vi,Khoan đã,2,100,0.38,-0.095,0.57,292.2,0,True,False,experiments/results/vi_20260723_102501,20260723_102501
+greenmind-14b-r1,vi_gsm8k,vi,"Không, chờ đã",0,100,0.77,-0.095,0.77,213.2,0,True,False,experiments/results/vi_20260723_162635,20260723_162635
+greenmind-14b-r1,vi_gsm8k,vi,"Không, chờ đã",1,100,0.58,-0.095,0.77,221.3,0,True,False,experiments/results/vi_20260723_162635,20260723_162635
+greenmind-14b-r1,vi_gsm8k,vi,"Không, chờ đã",2,100,0.58,-0.095,0.77,305.8,0,True,False,experiments/results/vi_20260723_162635,20260723_162635
+greenmind-14b-r1,vnhsge,vi,"Không, chờ đã",0,100,0.57,-0.03,0.57,178.3,0,True,False,experiments/results/vi_20260723_163036,20260723_163036
+greenmind-14b-r1,vnhsge,vi,"Không, chờ đã",1,100,0.5,-0.03,0.57,264.2,0,True,False,experiments/results/vi_20260723_163036,20260723_163036
+greenmind-14b-r1,vnhsge,vi,"Không, chờ đã",2,100,0.51,-0.03,0.57,335.0,0,True,False,experiments/results/vi_20260723_121530,20260723_121530
+greenmind-14b-r1,vimmlu,vi,"Không, chờ đã",0,100,0.57,-0.04,0.57,170.8,0,True,False,experiments/results/vi_20260723_204708,20260723_204708
+greenmind-14b-r1,vimmlu,vi,"Không, chờ đã",1,100,0.56,-0.04,0.57,248.8,0,True,False,experiments/results/vi_20260723_204708,20260723_204708
+greenmind-14b-r1,vimmlu,vi,"Không, chờ đã",2,100,0.49,-0.04,0.57,329.8,0,True,False,experiments/results/vi_20260723_204708,20260723_204708
+greenmind-14b-r1,vi_gsm8k,vi,Để tôi kiểm tra lại,0,100,0.77,-0.095,0.77,213.2,0,True,False,experiments/results/vi_20260724_104814,20260724_104814
+greenmind-14b-r1,vi_gsm8k,vi,Để tôi kiểm tra lại,1,100,0.71,-0.095,0.77,220.6,0,True,False,experiments/results/vi_20260724_104814,20260724_104814
+greenmind-14b-r1,vi_gsm8k,vi,Để tôi kiểm tra lại,2,100,0.58,-0.095,0.77,238.4,0,True,False,experiments/results/vi_20260724_104814,20260724_104814
+greenmind-14b-r1,vimmlu,vi,Để tôi kiểm tra lại,0,100,0.57,-0.055,0.57,170.8,0,True,False,experiments/results/vi_20260724_145123,20260724_145123
+greenmind-14b-r1,vimmlu,vi,Để tôi kiểm tra lại,1,100,0.5,-0.055,0.57,225.5,0,True,False,experiments/results/vi_20260724_145123,20260724_145123
+greenmind-14b-r1,vimmlu,vi,Để tôi kiểm tra lại,2,100,0.46,-0.055,0.57,243.9,0,True,False,experiments/results/vi_20260724_145123,20260724_145123
+greenmind-14b-r1,vnhsge,vi,Để tôi kiểm tra lại,0,100,0.57,-0.055,0.57,178.3,0,True,False,experiments/results/vi_20260724_183018,20260724_183018
+greenmind-14b-r1,vnhsge,vi,Để tôi kiểm tra lại,1,100,0.39,-0.055,0.57,242.7,0,True,False,experiments/results/vi_20260724_183018,20260724_183018
+greenmind-14b-r1,vnhsge,vi,Để tôi kiểm tra lại,2,100,0.46,-0.055,0.57,260.6,0,True,False,experiments/results/vi_20260724_183018,20260724_183018

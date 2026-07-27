@@ -1,0 +1,10 @@
+model,benchmark,language,trigger,n_wait,n_samples,accuracy,scaling,performance,avg_thinking_tokens,extraction_failures,cuda_available,mps_available,run_dir,timestamp_utc
+r1-distill-7B,vi_gsm8k,vi,Chờ một chút,0,100,0.53,0.02,0.57,191.0,0,True,False,experiments/results/vi_20260627_100737,20260627_100737
+r1-distill-7B,vi_gsm8k,vi,Chờ một chút,1,100,0.56,0.02,0.57,329.1,0,True,False,experiments/results/vi_20260627_100737,20260627_100737
+r1-distill-7B,vi_gsm8k,vi,Chờ một chút,2,100,0.57,0.02,0.57,426.1,0,True,False,experiments/results/vi_20260627_100737,20260627_100737
+r1-distill-7B,vimmlu,vi,Chờ một chút,0,100,0.27,0.02,0.31,539.8,0,True,False,experiments/results/vi_20260627_142812,20260627_142812
+r1-distill-7B,vimmlu,vi,Chờ một chút,1,100,0.23,0.02,0.31,741.0,0,True,False,experiments/results/vi_20260627_142812,20260627_142812
+r1-distill-7B,vimmlu,vi,Chờ một chút,2,100,0.31,0.02,0.31,870.6,0,True,False,experiments/results/vi_20260627_142812,20260627_142812
+r1-distill-7B,vnhsge,vi,Chờ một chút,0,100,0.22,0.015,0.25,540.9,0,True,False,experiments/results/vi_20260627_235634,20260627_235634
+r1-distill-7B,vnhsge,vi,Chờ một chút,1,100,0.21,0.015,0.25,676.3,0,True,False,experiments/results/vi_20260627_235634,20260627_235634
+r1-distill-7B,vnhsge,vi,Chờ một chút,2,100,0.25,0.015,0.25,801.0,0,True,False,experiments/results/vi_20260627_235634,20260627_235634
